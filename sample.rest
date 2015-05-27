@@ -1,0 +1,91 @@
+// Examples of some ElasticSearch requests.
+
+#
+# View nodes status
+#
+http://localhost:9200
+GET /_cat/nodes?v
+
+#
+# Add a new doc to the new 'testindex' and 'testtype'
+#
+http://localhost:9200
+
+POST /testindex/testtype
+{
+    "name": "some name",
+    "value": "some value",
+    "date": "2015-01-01"
+}
+
+#
+# Search 'testindex'
+#
+http://localhost:9200
+GET /testindex/_search?pretty
+
+#
+# View mapping.
+#
+http://localhost:9200
+GET /testindex/testtype/_mapping?pretty
+
+#
+# Bulk-add new docs to 'testindex'
+#
+http://localhost:9200
+
+POST /testindex/_bulk?pretty
+{ "create": { "_type": "testtype" }}
+{ "name": "FOO", "value": "think about BAR", "date": "2015-01-05" }
+{ "create": { "_type": "testtype" }}
+{ "name": "FOO", "value": "some value of FOO", "date": "2015-01-06" }
+{ "create": { "_type": "testtype" }}
+{ "name": "BAR", "value": "some value of BAR", "date": "2015-01-07" }
+{ "create": { "_type": "testtype" }}
+{ "name": "BAR", "value": "think about FOO", "date": "2015-01-08" }
+
+#
+# Lite search
+#
+http://localhost:9200
+GET /testindex/testtype/_search?pretty q=+name:FOO +value:(FOO BAR)
+
+#
+# Full-body search
+#
+http://localhost:9200
+
+POST /testindex/_search?pretty
+{
+    "query": {
+        "filtered": {
+            "filter": {
+                "range": {
+                    "date": {
+                        "gte": "2015-01-06",
+                        "lte": "2015-01-08"
+                    }
+                }
+            },
+            "query": {
+                "match": {
+                    "value": "FOO"
+                }
+            }
+        }
+    }
+}
+
+#
+# Delete 'testindex'
+#
+http://localhost:9200
+DELETE /testindex?pretty
+
+#
+# Check for 'testindex' existence
+#
+http://localhost:9200
+HEAD /testindex
+
