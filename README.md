@@ -195,6 +195,17 @@ its own output display. For this, the option can be set in the buffer scope as
 
     let b:vrc_output_buffer_name = '__REST_1_OUTPUT__'
 
+#### `vrc_header_content_type`
+
+This option is to set the header content type of the request. It defaults to
+`application/json`. To set a different default content type,
+
+    let g:vrc_header_content_type = 'application/x-www-form-urlencoded'
+
+It can also be set in the buffer scope by
+
+    let b:vrc_header_content_type = 'application/json; charset=utf-8'
+
 #### `vrc_nl_sep_post_data_patterns`
 
 The *optional request body* usually spans multiple lines. VRC has to combine

@@ -30,8 +30,8 @@ function! s:ParseRequest(listLines)
     endwhile
     if empty(host)
         return {
-        \    'success': 0,
-        \    'msg': 'Missing host',
+        \   'success': 0,
+        \   'msg': 'Missing host',
         \}
     endif
 
@@ -47,27 +47,27 @@ function! s:ParseRequest(listLines)
     endwhile
     if empty(restQuery)
         return {
-        \    'success': 0,
-        \    'msg': 'Missing query',
+        \   'success': 0,
+        \   'msg': 'Missing query',
         \}
     endif
 
     """ Parse http verb and query path.
     let [httpVerb, queryPath; urlEncodeData] = split(restQuery)
     let nlSepBodyPattern = join(
-    \    s:GetOptValue('vrc_nl_sep_post_data_patterns', ['\v\W?_bulk\W?']),
-    \    '|'
+    \   s:GetOptValue('vrc_nl_sep_post_data_patterns', ['\v\W?_bulk\W?']),
+    \   '|'
     \)
     let joinSep = (queryPath =~ nlSepBodyPattern) ? "\n" : ''
     return {
-    \    'success': 1,
-    \    'msg': '',
-    \    'host': host,
-    \    'useSsl': useSsl,
-    \    'httpVerb': httpVerb,
-    \    'requestPath': queryPath,
-    \    'urlEncodeData': join(urlEncodeData),
-    \    'dataBody': join(a:listLines[i :], joinSep)
+    \   'success': 1,
+    \   'msg': '',
+    \   'host': host,
+    \   'useSsl': useSsl,
+    \   'httpVerb': httpVerb,
+    \   'requestPath': queryPath,
+    \   'urlEncodeData': join(urlEncodeData),
+    \   'dataBody': join(a:listLines[i :], joinSep)
     \}
 endfunction
 
@@ -82,6 +82,10 @@ function! s:CallCurl(request)
     if a:request.useSsl && !secureSsl
         call add(curlArgs, '-k')
     endif
+
+    """ Add headers.
+    let contentType = s:GetOptValue('vrc_header_content_type', 'application/json')
+    call add(curlArgs, '-H ' . shellescape('Content-Type: ' . contentType))
 
     """ Add http verb.
     let httpVerb = a:request.httpVerb
@@ -117,13 +121,15 @@ endfunction
 
 function! s:DisplayOutput(tmpBufName, output)
     """ Setup view.
-    if bufwinnr(bufnr(a:tmpBufName)) == -1
+    let origWin = winnr()
+    let outputWin = bufwinnr(bufnr(a:tmpBufName))
+    if outputWin == -1
         """ Create view if not loadded or hidden.
         execute 'rightbelow vsplit ' . a:tmpBufName
         setlocal buftype=nofile
     else
         """ View already shown, switch to it.
-        wincmd l
+        execute outputWin . 'wincmd w'
     endif
 
     """ Display output in view.
@@ -131,7 +137,7 @@ function! s:DisplayOutput(tmpBufName, output)
     silent! normal! ggdG
     call setline('.', split(substitute(a:output, '[[:return:]]', '', 'g'), '\v\n'))
     setlocal nomodifiable
-    wincmd h
+    execute origWin . 'wincmd w'
 endfunction
 
 function! s:RunQuery(textLines)
@@ -141,8 +147,8 @@ function! s:RunQuery(textLines)
         return
     endif
     call s:DisplayOutput(
-    \    s:GetOptValue('vrc_output_buffer_name', '__REST_response__'),
-    \    s:CallCurl(request)
+    \   s:GetOptValue('vrc_output_buffer_name', '__REST_response__'),
+    \   s:CallCurl(request)
     \)
 endfunction
 
