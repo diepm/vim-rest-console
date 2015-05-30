@@ -211,4 +211,6 @@ function! VrcMap()
     execute 'inoremap ' . triggerKey . ' <Esc>:call VrcQuery()<CR>'
 endfunction
 
-call VrcMap()
+if s:GetOptValue('vrc_set_default_mapping', 1)
+    call VrcMap()
+endif
