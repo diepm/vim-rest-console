@@ -23,6 +23,7 @@ CONTENTS                                                         *VrcContents*
       vrc_ssl_secure....................................... |vrc_ssl_secure|
       vrc_output_buffer_name....................... |vrc_output_buffer_name|
       vrc_header_content_type..................... |vrc_header_content_type|
+      vrc_cookie_jar....................................... |vrc_cookie_jar|
       vrc_nl_sep_post_data_patterns......... |vrc_nl_sep_post_data_patterns|
       vrc_debug................................................. |vrc_debug|
   7. TODOs....................................................... |VrcTodos|
@@ -258,6 +259,18 @@ It can also be set in the buffer scope by
 If 'Content-Type' is specified in the request block, it overrides this
 setting.
 
+------------------------------------------------------------------------------
+*vrc_cookie_jar*
+
+This option enables persisting cookies between requests in a cookie jar file.
+Useful when the underlying API uses session or authorization cookies.
+>
+    let g:vrc_cookie_jar = '/tmp/vrc_cookie_jar'
+<
+It can also be set in the buffer scope by
+>
+    let b:vrc_cookie_jar = './jar'
+<
 ------------------------------------------------------------------------------
 *vrc_nl_sep_post_data_patterns*
 
