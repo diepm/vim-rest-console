@@ -24,10 +24,12 @@ CONTENTS                                                         *VrcContents*
       vrc_output_buffer_name....................... |vrc_output_buffer_name|
       vrc_header_content_type..................... |vrc_header_content_type|
       vrc_cookie_jar....................................... |vrc_cookie_jar|
+      vrc_set_default_mapping..................... |vrc_set_default_mapping|
       vrc_nl_sep_post_data_patterns......... |vrc_nl_sep_post_data_patterns|
       vrc_debug................................................. |vrc_debug|
   7. TODOs....................................................... |VrcTodos|
-  8. License................................................... |VrcLicense|
+  8. Contributors......................................... |VrcContributors|
+  9. License................................................... |VrcLicense|
 
 ==============================================================================
                                                              *VrcIntroduction*
@@ -272,6 +274,18 @@ It can also be set in the buffer scope by
     let b:vrc_cookie_jar = './jar'
 <
 ------------------------------------------------------------------------------
+*vrc_set_default_mapping*
+
+This option is to enable/disable the trigger key mapping. It's enabled by
+default. To disable the mapping,
+>
+    let g:vrc_set_default_mapping = 0
+<
+Once the mapping is disabled, the request block can be executed by
+>
+    :call VrcQuery()
+<
+------------------------------------------------------------------------------
 *vrc_nl_sep_post_data_patterns*
 
 The optional request body usually spans multiple lines. VRC has to combine
@@ -313,8 +327,20 @@ send each line of the data to cURL using a separate '--data' or
 '--data-urlencode'.
 
 ===============================================================================
+                                                              *VrcContributors*
+8. Contributors~
+
+Thanks to the contributors (in alphabetical order)
+>
+    @dan-silva
+    @jojoyuji
+    @korin
+    @tonyskn
+<
+
+===============================================================================
                                                                    *VrcLicense*
-8. LICENSE~
+9. LICENSE~
 
 MIT
 
