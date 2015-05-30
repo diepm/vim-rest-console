@@ -223,6 +223,17 @@ It can also be set in the buffer scope by
 
 If `Content-Type` is specified in the request block, it overrides this setting.
 
+#### `vrc_cooke_jar`
+
+This option enables persisting cookies between requests in a cookie jar file.
+Useful when the underlying API uses session or authorization cookies.
+
+    let g:vrc_cookie_jar = '/tmp/vrc_cookie_jar'
+
+It can also be set in the buffer scope by
+
+    let b:vrc_cookie_jar = './jar'
+
 #### `vrc_nl_sep_post_data_patterns`
 
 The *optional request body* usually spans multiple lines. VRC has to combine
