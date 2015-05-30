@@ -101,8 +101,8 @@ function! s:CallCurl(request)
     """ Add --cookie-jar
     let cookieJar = s:GetOptValue('vrc_cookie_jar', 0)
     if !empty(cookieJar)
-      call add(curlArgs, '-b ' . shellescape(cookieJar))
-      call add(curlArgs, '-c ' . shellescape(cookieJar))
+        call add(curlArgs, '-b ' . shellescape(cookieJar))
+        call add(curlArgs, '-c ' . shellescape(cookieJar))
     endif
 
     """ Add headers.

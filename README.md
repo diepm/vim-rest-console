@@ -223,7 +223,7 @@ It can also be set in the buffer scope by
 
 If `Content-Type` is specified in the request block, it overrides this setting.
 
-#### `vrc_cooke_jar`
+#### `vrc_cookie_jar`
 
 This option enables persisting cookies between requests in a cookie jar file.
 Useful when the underlying API uses session or authorization cookies.
