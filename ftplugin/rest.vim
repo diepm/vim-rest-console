@@ -1,3 +1,7 @@
+function! s:StrStrip(txt)
+    return substitute(a:txt, '\v^\s*(.*)\s*$', '\1', 'g')
+endfunction
+
 function! s:GetOptValue(opt, defVal)
     if exists('b:' . a:opt)
         return eval('b:' . a:opt)
@@ -35,14 +39,24 @@ function! s:ParseRequest(listLines)
         \}
     endif
 
-    """ Parse REST query.
+    """ Parse REST query and request headers.
     let restQuery = ''
+    let headers = {}
     while i < numLines
-        let line = substitute(a:listLines[i], '\v^\s*(.*)\s*$', '\1', '')
+        let line = s:StrStrip(a:listLines[i])
         let i += 1
+        """ Http verb is reached, get out of loop.
         if line =~? '\v^(GET|POST|PUT|DELETE|HEAD)\s+'
             let restQuery = line
             break
+        endif
+
+        """ Otherwise, parse header line.
+        let sepIdx = stridx(line, ':')
+        if sepIdx > -1
+            let headerKey = s:StrStrip(line[0:sepIdx - 1])
+            let headerVal = s:StrStrip(line[sepIdx + 1:])
+            let headers[headerKey] = headerVal
         endif
     endwhile
     if empty(restQuery)
@@ -64,6 +78,7 @@ function! s:ParseRequest(listLines)
     \   'msg': '',
     \   'host': host,
     \   'useSsl': useSsl,
+    \   'headers': headers,
     \   'httpVerb': httpVerb,
     \   'requestPath': queryPath,
     \   'urlEncodeData': join(urlEncodeData),
@@ -84,8 +99,17 @@ function! s:CallCurl(request)
     endif
 
     """ Add headers.
-    let contentType = s:GetOptValue('vrc_header_content_type', 'application/json')
-    call add(curlArgs, '-H ' . shellescape('Content-Type: ' . contentType))
+    let hasContentType = 0
+    for key in keys(a:request.headers)
+        if key ==? 'Content-Type'
+            let hasContentType = 1
+        endif
+        call add(curlArgs, '-H ' . shellescape(key . ': ' . a:request.headers[key]))
+    endfor
+    if !hasContentType
+        let contentType = s:GetOptValue('vrc_header_content_type', 'application/json')
+        call add(curlArgs, '-H ' . shellescape('Content-Type: ' . contentType))
+    endif
 
     """ Add http verb.
     let httpVerb = a:request.httpVerb

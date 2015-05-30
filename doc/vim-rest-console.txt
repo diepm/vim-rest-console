@@ -145,12 +145,14 @@ a file with the extension 'rest' or a buffer with `filetype` explicitly set to
 >
     :set ft=rest
 <
-A VRC buffer can have one or many REST request blocks. A request block
-contains a host, query, and an optional request body (usually used by POST).
-A block is defined as follows.
+A VRC buffer can have one or many REST request blocks. A "request block"
+contains a "host," "query," "optional headers," and an "optional request body"
+(usually used by POST). A block is defined as follows.
 >
     # host
     http[s]://domain[:port]
+
+    [optional headers]
 
     # query
     POST /path/to/resource
@@ -165,6 +167,10 @@ is an example of a VRC buffer with multiple request blocks.
 
     # POSTing to an ElasticSearch service.
     http://example.com/elasticsearch
+
+    // Specify optional headers.
+    Content-Type: application/json; charset=utf-8
+
     POST /index/type?pretty
     {
         "key": "a key",
@@ -173,9 +179,18 @@ is an example of a VRC buffer with multiple request blocks.
 
     # Submitting a form.
     https://example.net:8080
+
+    Accept: */*
+    Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    Cache-Control: no-cache
+    Connection: keep-alive
+    Content-Type: application/x-www-form-urlencoded
+    Cookie: userId=ac32:dfbe:8f1a:249c; sid=cfb48e3d98fcb1
+    User-Agent: VRC
+
     POST /form
-    var1=value of var1
-    &var2=value of var2
+    var1=value of var1&
+    var2=value of var2
 <
 When the trigger key is called (<C-j> by default), VRC processes the request
 block that the cursor stays within. The response is displayed in a new
@@ -183,7 +198,7 @@ vertically split buffer. This output buffer is reused if it's already present.
 
 By default, the display/output buffer is named '__REST_response__'. If there
 are multiple VRC buffers, they all share the same display buffer. To have a
-separate display buffer for each VRC buffer, |vrc_output_buffer_name| can be
+separate output display for each VRC buffer, |vrc_output_buffer_name| can be
 set in the buffer scope.
 
 ==============================================================================
@@ -240,6 +255,9 @@ It can also be set in the buffer scope by
 >
     let b:vrc_header_content_type = 'application/json; charset=utf-8'
 <
+If 'Content-Type' is specified in the request block, it overrides this
+setting.
+
 ------------------------------------------------------------------------------
 *vrc_nl_sep_post_data_patterns*
 
@@ -249,7 +267,7 @@ separator; however, some services such as ElasticSearch need the newline
 characters (\n) for some queries (e.g., _bulk).
 
 This option is a list of patterns to tell VRC to join the optional request
-body using the newline character when the query path
+body using the newline character when the query path such as
 >
     GET /path/to/resource
 <
@@ -274,7 +292,7 @@ default.
 7. TODOs~
 
 Currently, VRC combines the request body as a whole and passes it to cURL
-using the '--data' or '--data_urlencode' option. It's useful for working with
+using the '--data' or '--data-urlencode' option. It's useful for working with
 JSON request body but not convenient for non-JSON data.
 
 Need to improve the request body parsing so that for non-JSON request, it can
