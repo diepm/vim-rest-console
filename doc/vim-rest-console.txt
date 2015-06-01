@@ -26,6 +26,7 @@ CONTENTS                                                         *VrcContents*
       vrc_cookie_jar....................................... |vrc_cookie_jar|
       vrc_set_default_mapping..................... |vrc_set_default_mapping|
       vrc_nl_sep_post_data_patterns......... |vrc_nl_sep_post_data_patterns|
+      vrc_follow_redirects........................... |vrc_follow_redirects|
       vrc_debug................................................. |vrc_debug|
   7. TODOs....................................................... |VrcTodos|
   8. Contributors......................................... |VrcContributors|
@@ -308,6 +309,14 @@ This option defaults to ['\v\W?_bulk\W?']. To add new patterns,
     \]
 <
 ------------------------------------------------------------------------------
+*vrc_follow_redirects*
+
+This option enables the cURL -L/--location option that makes it follow
+redirects. It's turned off by default. To enable
+>
+    let g:vrc_follow_redirects = 1
+<
+------------------------------------------------------------------------------
 *vrc_debug*
 
 This option enables the debug mode by adding the '-v' option to the 'curl'
@@ -336,8 +345,8 @@ Thanks to the contributors (in alphabetical order)
     @jojoyuji
     @korin
     @tonyskn
+    @torbjornvatn
 <
-
 ===============================================================================
                                                                    *VrcLicense*
 9. LICENSE~

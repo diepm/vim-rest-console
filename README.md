@@ -268,7 +268,10 @@ This option defaults to `['\v\W?_bulk\W?']`. To add new patterns,
 
 #### `vrc_follow_redirects`
 
-This option enables the cURL -L/--location option that makes it follow redirects
+This option enables the cURL -L/--location option that makes it follow
+redirects. It's turned off by default. To enable
+
+    let g:vrc_follow_redirects = 1
 
 #### `vrc_debug`
 
@@ -294,6 +297,7 @@ Thanks to the contributors (in alphabetical order)
 @jojoyuji
 @korin
 @tonyskn
+@torbjornvatn
 
 ### 9. License
 
