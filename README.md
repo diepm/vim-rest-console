@@ -266,6 +266,10 @@ This option defaults to `['\v\W?_bulk\W?']`. To add new patterns,
     \    'OtherPattern',
     \]
 
+#### `vrc_follow_redirects`
+
+This option enables the cURL -L/--location option that makes it follow redirects
+
 #### `vrc_debug`
 
 This option enables the debug mode by adding the `-v` option to the *curl*
