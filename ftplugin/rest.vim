@@ -104,6 +104,12 @@ function! s:CallCurl(request)
         call add(curlArgs, '-b ' . shellescape(cookieJar))
         call add(curlArgs, '-c ' . shellescape(cookieJar))
     endif
+    
+    """ Add -L option to enable redirects
+    let locationEnabled = s:GetOptValue('vrc_follow_redirects', 0)
+    if locationEnabled
+      call add(curlArgs, '-L')
+    endif
 
     """ Add headers.
     let hasContentType = 0
