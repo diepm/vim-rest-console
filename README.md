@@ -273,6 +273,32 @@ redirects. It's turned off by default. To enable
 
     let g:vrc_follow_redirects = 1
 
+#### `vrc_auto_format_response_enabled`
+
+This option enables the automatic formatting of the response. It's enabled by
+default. To disable:
+
+    let g:vrc_auto_format_response_enabled = 0
+
+#### `vrc_auto_format_response_patterns`
+
+This option defines which external tools to use to auto-format the response
+body according to the Content-Type.
+
+The defaults are:
+
+    let s:vrc_auto_format_response_patterns = {
+    \    'json': 'python -m json.tool',
+    \    'xml': 'xmllint --format -',
+    \ }
+
+Adjust the list by defining the global or buffer variable, like so:
+
+    let g:vrc_auto_format_response_patterns = {
+    \   'json': ''
+    \   'xml': 'tidy -xml -i -'
+    \ }
+
 #### `vrc_debug`
 
 This option enables the debug mode by adding the `-v` option to the *curl*
