@@ -88,7 +88,11 @@ endfunction
 
 function! s:CallCurl(request)
     """ Construct CURL args.
-    let curlArgs = ['-isS']
+    let curlArgs = ['-sS']
+    let vrcIncludeHeader = s:GetOptValue('vrc_include_response_header', 1)
+    if vrcIncludeHeader
+        call add(curlArgs, '-i')
+    endif
     let vrcDebug = s:GetOptValue('vrc_debug', 0)
     if vrcDebug
         call add(curlArgs, '-v')

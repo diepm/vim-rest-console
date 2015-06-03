@@ -28,6 +28,7 @@ CONTENTS                                                         *VrcContents*
       vrc_nl_sep_post_data_patterns......... |vrc_nl_sep_post_data_patterns|
       vrc_follow_redirects........................... |vrc_follow_redirects|
       vrc_debug................................................. |vrc_debug|
+      vrc_include_response_header............. |vrc_include_response_header|
   7. TODOs....................................................... |VrcTodos|
   8. Contributors......................................... |VrcContributors|
   9. License................................................... |VrcLicense|
@@ -322,6 +323,15 @@ redirects. It's turned off by default. To enable
 This option enables the debug mode by adding the '-v' option to the 'curl'
 command and also `echom` the command to the Vim console. It's turned off by
 default.
+
+------------------------------------------------------------------------------
+*vrc_include_response_header*
+
+This option enables the inclusion of the response header information mode by
+adding the '-i' option to the 'curl' command. It's turned on by default.
+To disable
+
+    let g:vrc_include_response_header = 0
 
 ==============================================================================
                                                                     *VrcTodos*
