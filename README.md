@@ -293,6 +293,13 @@ Adjust the list by defining the global or buffer variable, like so:
 
 If `vrc_include_response_header` is disabled, this option does nothing.
 
+### `vrc_syntax_highlight_response`
+
+This option enables the syntax highlighting of the response body according to
+the Content-Type. It's enabled by default. To disable:
+
+  let g:vrc_syntax_highlight_response = 0
+
 #### `vrc_nl_sep_post_data_patterns`
 
 The *optional request body* usually spans multiple lines. VRC has to combine
