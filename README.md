@@ -245,6 +245,54 @@ Once the mapping is disabled, the request block can be executed by
 
     :call VrcQuery()
 
+#### `vrc_follow_redirects`
+
+This option enables the cURL -L/--location option that makes it follow
+redirects. It's turned off by default. To enable
+
+    let g:vrc_follow_redirects = 1
+
+#### `vrc_include_response_header`
+
+This option enables the inclusion of the response header information mode by
+adding the `-i` option to the *curl* command. It's turned on by default. To
+disable
+
+    let g:vrc_include_response_header = 0
+
+If this option is disabled, the auto-formatting response options
+`vrc_auto_format_response_*` below will not take effect.
+
+#### `vrc_auto_format_response_enabled`
+
+This option enables the automatic formatting of the response. It's enabled by
+default. To disable:
+
+    let g:vrc_auto_format_response_enabled = 0
+
+If `vrc_include_response_header` is disabled, this option does nothing.
+
+#### `vrc_auto_format_response_patterns`
+
+This option defines which external tools to use to auto-format the response
+body according to the Content-Type.
+
+The defaults are:
+
+    let s:vrc_auto_format_response_patterns = {
+    \   'json': 'python -m json.tool',
+    \   'xml': 'xmllint --format -',
+    \}
+
+Adjust the list by defining the global or buffer variable, like so:
+
+    let g:vrc_auto_format_response_patterns = {
+    \   'json': ''
+    \   'xml': 'tidy -xml -i -'
+    \}
+
+If `vrc_include_response_header` is disabled, this option does nothing.
+
 #### `vrc_nl_sep_post_data_patterns`
 
 The *optional request body* usually spans multiple lines. VRC has to combine
@@ -262,42 +310,9 @@ matches any pattern in the list.
 This option defaults to `['\v\W?_bulk\W?']`. To add new patterns,
 
     let g:vrc_nl_sep_post_data_patterns = [
-    \    '\v\W?_bulk\W?',
-    \    'OtherPattern',
+    \   '\v\W?_bulk\W?',
+    \   'OtherPattern',
     \]
-
-#### `vrc_follow_redirects`
-
-This option enables the cURL -L/--location option that makes it follow
-redirects. It's turned off by default. To enable
-
-    let g:vrc_follow_redirects = 1
-
-#### `vrc_auto_format_response_enabled`
-
-This option enables the automatic formatting of the response. It's enabled by
-default. To disable:
-
-    let g:vrc_auto_format_response_enabled = 0
-
-#### `vrc_auto_format_response_patterns`
-
-This option defines which external tools to use to auto-format the response
-body according to the Content-Type.
-
-The defaults are:
-
-    let s:vrc_auto_format_response_patterns = {
-    \    'json': 'python -m json.tool',
-    \    'xml': 'xmllint --format -',
-    \ }
-
-Adjust the list by defining the global or buffer variable, like so:
-
-    let g:vrc_auto_format_response_patterns = {
-    \   'json': ''
-    \   'xml': 'tidy -xml -i -'
-    \ }
 
 #### `vrc_debug`
 
@@ -305,7 +320,21 @@ This option enables the debug mode by adding the `-v` option to the *curl*
 command and also `echom` the command to the Vim console. It's turned off by
 default.
 
-### 7. TODOs
+### 7. Tips 'n Tricks
+
+If the appropriate ftplugin is installed, it is very easy to enable output
+syntax highlighting (especially for JSON) with this in your `.vimrc`:
+
+    let g:vrc_output_buffer_name = '__VRC_OUTPUT.json'
+
+`filetype` of an output buffer can also be set to the corresponding type
+using `set ft=...`. Alternatively, it might be possible to set it per request
+buffer using a special modeline (requiring
+[let-modeline](http://www.vim.org/scripts/script.php?script_id=83)):
+
+    # vim: let b:vrc_output_buffer_name = '__VRC_OUTPUT.json'
+
+### 8. TODOs
 
 Currently, VRC combines the request body as a whole and passes it to cURL
 using the `--data` or `--data-urlencode` option. It's useful for working with
@@ -315,16 +344,19 @@ Need to improve the request body parsing so that for non-JSON request, it can
 send each line of the data to cURL using a separate `--data` or
 `--data-urlencode`.
 
-### 8. Contributors
+### 9. Contributors
 
 Thanks to the contributors (in alphabetical order)
 
-@dan-silva
-@jojoyuji
-@korin
-@tonyskn
-@torbjornvatn
+    @dan-silva
+    @jojoyuji
+    @korin
+    @mjakl
+    @shanesmith
+    @sethtrain
+    @tonyskn
+    @torbjornvatn
 
-### 9. License
+### 10. License
 
 MIT

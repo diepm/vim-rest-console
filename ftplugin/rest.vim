@@ -1,7 +1,7 @@
 let s:vrc_auto_format_response_patterns = {
-      \ 'json': 'python -m json.tool',
-      \ 'xml': 'xmllint --format -',
-      \ }
+\   'json': 'python -m json.tool',
+\   'xml': 'xmllint --format -',
+\}
 
 function! s:StrStrip(txt)
     return substitute(a:txt, '\v^\s*(.*)\s*$', '\1', 'g')
@@ -19,10 +19,10 @@ endfunction
 
 function! s:GetDictValue(dictName, key, defVal)
     for prefix in ['b', 'g', 's']
-      let varName = prefix . ':' . a:dictName
-      if exists(varName) && has_key(eval(varName), a:key)
-        return get(eval(varName), a:key)
-      endif
+        let varName = prefix . ':' . a:dictName
+        if exists(varName) && has_key(eval(varName), a:key)
+            return get(eval(varName), a:key)
+        endif
     endfor
     return a:defVal
 endfunction
@@ -176,6 +176,9 @@ function! s:CallCurl(request)
 endfunction
 
 function! s:DisplayOutput(tmpBufName, output)
+    """ Get view options before working in the view buffer.
+    let autoFormatResponse = s:GetOptValue('vrc_auto_format_response_enabled', 1)
+
     """ Setup view.
     let origWin = winnr()
     let outputWin = bufwinnr(bufnr(a:tmpBufName))
@@ -193,33 +196,37 @@ function! s:DisplayOutput(tmpBufName, output)
     silent! normal! ggdG
     call setline('.', split(substitute(a:output, '[[:return:]]', '', 'g'), '\v\n'))
 
-    if s:GetOptValue('vrc_auto_format_response_enabled', 1)
+    """ Auto-format the response.
+    if autoFormatResponse
+        call cursor(1, 0)
+        let emptyLineNum = search('\v^\s*$', 'n')
+        let contentTypeLineNum = search('\v^Content-Type:', 'n', emptyLineNum)
 
-      call cursor(1, 0)
-      let emptyLineNum = search('\v^\s*$', 'n')
-      let contentTypeLineNum = search('\v^Content-Type:', 'n', emptyLineNum)
+        if contentTypeLineNum > 0
+            let contentType = substitute(
+            \   getline(contentTypeLineNum),
+            \   '\v^Content-Type:\s*([^;[:blank:]]*).*$',
+            \   '\1',
+            \   'g'
+            \)
+            let fileType = substitute(contentType, '\v^.*/(.*\+)?(.*)$', '\2', 'g')
+            let formatCmd = s:GetDictValue('vrc_auto_format_response_patterns', fileType, '')
 
-      if contentTypeLineNum > 0
-        let contentType = substitute(getline(contentTypeLineNum), '\v^Content-Type:\s*([^;[:blank:]]*).*$', '\1', 'g')
-        let fileType = substitute(contentType, '\v^.*/(.*\+)?(.*)$', '\2', 'g')
-        let formatCmd = s:GetDictValue('vrc_auto_format_response_patterns', fileType, '')
-
-        if !empty(formatCmd)
-          """ Auto-format response body
-          let formattedBody = system(formatCmd, join(getline(emptyLineNum + 0, '$'), "\n"))
-
-          if v:shell_error == 0
-            execute (emptyLineNum + 1) . ',$delete _'
-            call append('$', split(formattedBody, '\v\n'))
-          elseif s:GetOptValue('vrc_debug', 0)
-            echom "VRC: aut-format error: " . v:shell_error
-            echom formattedBody
-          endif
-
+            if !empty(formatCmd)
+                """ Auto-format response body
+                let formattedBody = system(
+                \   formatCmd,
+                \   join(getline(emptyLineNum + 0, '$'), "\n")
+                \)
+                if v:shell_error == 0
+                    execute (emptyLineNum + 1) . ',$delete _'
+                    call append('$', split(formattedBody, '\v\n'))
+                elseif s:GetOptValue('vrc_debug', 0)
+                    echom "VRC: aut-format error: " . v:shell_error
+                    echom formattedBody
+                endif
+            endif
         endif
-
-      endif
-
     endif
 
     setlocal nomodifiable
