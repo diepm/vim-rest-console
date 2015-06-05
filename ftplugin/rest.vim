@@ -178,6 +178,7 @@ endfunction
 function! s:DisplayOutput(tmpBufName, output)
     """ Get view options before working in the view buffer.
     let autoFormatResponse = s:GetOptValue('vrc_auto_format_response_enabled', 1)
+    let syntaxHighlightResponse = s:GetOptValue('vrc_syntax_highlight_response', 1)
 
     """ Setup view.
     let origWin = winnr()
@@ -196,20 +197,21 @@ function! s:DisplayOutput(tmpBufName, output)
     silent! normal! ggdG
     call setline('.', split(substitute(a:output, '[[:return:]]', '', 'g'), '\v\n'))
 
-    """ Auto-format the response.
-    if autoFormatResponse
-        call cursor(1, 0)
-        let emptyLineNum = search('\v^\s*$', 'n')
-        let contentTypeLineNum = search('\v^Content-Type:', 'n', emptyLineNum)
+    call cursor(1, 0)
+    let emptyLineNum = search('\v^\s*$', 'n')
+    let contentTypeLineNum = search('\v^Content-Type:', 'n', emptyLineNum)
 
-        if contentTypeLineNum > 0
-            let contentType = substitute(
-            \   getline(contentTypeLineNum),
-            \   '\v^Content-Type:\s*([^;[:blank:]]*).*$',
-            \   '\1',
-            \   'g'
-            \)
-            let fileType = substitute(contentType, '\v^.*/(.*\+)?(.*)$', '\2', 'g')
+    if contentTypeLineNum > 0
+        let contentType = substitute(
+              \   getline(contentTypeLineNum),
+              \   '\v^Content-Type:\s*([^;[:blank:]]*).*$',
+              \   '\1',
+              \   'g'
+              \)
+        let fileType = substitute(contentType, '\v^.*/(.*\+)?(.*)$', '\2', 'g')
+
+        """ Auto-format the response.
+        if autoFormatResponse
             let formatCmd = s:GetDictValue('vrc_auto_format_response_patterns', fileType, '')
 
             if !empty(formatCmd)
@@ -227,6 +229,16 @@ function! s:DisplayOutput(tmpBufName, output)
                 endif
             endif
         endif
+
+        if syntaxHighlightResponse
+            syntax clear
+            try
+                execute "syntax include @vrc_" . fileType . " syntax/" . fileType . ".vim"
+                execute "syntax region body start=/^$/ end=/\%$/ contains=@vrc_" . fileType
+            catch
+            endtry
+        endif
+
     endif
 
     setlocal nomodifiable

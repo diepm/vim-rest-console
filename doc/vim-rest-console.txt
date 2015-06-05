@@ -29,6 +29,7 @@ CONTENTS                                                         *VrcContents*
       vrc_include_response_header.............. |vrc_include_response_header|
       vrc_auto_format_response_enabled.... |vrc_auto_format_response_enabled|
       vrc_auto_format_response_patterns...|vrc_auto_format_response_patterns|
+      vrc_syntax_highlight_response...........|vrc_syntax_highlight_response|
       vrc_nl_sep_post_data_patterns.......... |vrc_nl_sep_post_data_patterns|
       vrc_debug.................................................. |vrc_debug|
   7. Tips 'n Tricks................................................. |VrcTnt|
@@ -344,6 +345,14 @@ Adjust the list by defining the global or buffer variable, like so:
 <
 If |vrc_include_response_header| is disabled, this option does nothing.
 
+------------------------------------------------------------------------------
+*vrc_syntax_highlight_response*
+
+This option enables the syntax highlighting of the response body according to
+the Content-Type. It's enabled by default. To disable:
+>
+  let g:vrc_syntax_highlight_response = 0
+<
 ------------------------------------------------------------------------------
 *vrc_nl_sep_post_data_patterns*
 
