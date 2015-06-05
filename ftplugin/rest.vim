@@ -230,6 +230,7 @@ function! s:DisplayOutput(tmpBufName, output)
             endif
         endif
 
+        """ Syntax-highlight response.
         if syntaxHighlightResponse
             syntax clear
             try
@@ -238,7 +239,6 @@ function! s:DisplayOutput(tmpBufName, output)
             catch
             endtry
         endif
-
     endif
 
     setlocal nomodifiable
@@ -287,9 +287,9 @@ endfunction
 
 function! VrcMap()
     let triggerKey = s:GetOptValue('vrc_trigger', '<C-j>')
-    execute 'vnoremap ' . triggerKey . ' :call VrcQuery()<CR>'
-    execute 'nnoremap ' . triggerKey . ' <Esc>:call VrcQuery()<CR>'
-    execute 'inoremap ' . triggerKey . ' <Esc>:call VrcQuery()<CR>'
+    execute 'vnoremap <buffer> ' . triggerKey . ' :call VrcQuery()<CR>'
+    execute 'nnoremap <buffer> ' . triggerKey . ' :call VrcQuery()<CR>'
+    execute 'inoremap <buffer> ' . triggerKey . ' <Esc>:call VrcQuery()<CR>'
 endfunction
 
 if s:GetOptValue('vrc_set_default_mapping', 1)

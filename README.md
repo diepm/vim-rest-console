@@ -260,8 +260,11 @@ disable
 
     let g:vrc_include_response_header = 0
 
-If this option is disabled, the auto-formatting response options
-`vrc_auto_format_response_*` below will not take effect.
+If this option is disabled, the following options will not take effect.
+
+* `vrc_auto_format_response_enabled`
+* `vrc_auto_format_response_patterns`
+* `vrc_syntax_highlight_response`
 
 #### `vrc_auto_format_response_enabled`
 
@@ -293,12 +296,14 @@ Adjust the list by defining the global or buffer variable, like so:
 
 If `vrc_include_response_header` is disabled, this option does nothing.
 
-### `vrc_syntax_highlight_response`
+#### `vrc_syntax_highlight_response`
 
 This option enables the syntax highlighting of the response body according to
 the Content-Type. It's enabled by default. To disable:
 
-  let g:vrc_syntax_highlight_response = 0
+    let g:vrc_syntax_highlight_response = 0
+
+If `vrc_include_response_header` is disabled, this option does nothing.
 
 #### `vrc_nl_sep_post_data_patterns`
 
@@ -329,17 +334,16 @@ default.
 
 ### 7. Tips 'n Tricks
 
-If the appropriate ftplugin is installed, it is very easy to enable output
-syntax highlighting (especially for JSON) with this in your `.vimrc`:
+Though VRC supports output syntax highlighting, it's based on the response
+Content-Type. When Content-Type is not present, the output can still be
+syntax-highlighted if the appropriate ftplugin is installed. To force the
+output highlighting based on `filetype`, place this setting in `.vimrc`:
 
-    let g:vrc_output_buffer_name = '__VRC_OUTPUT.json'
+    let g:vrc_output_buffer_name = '__VRC_OUTPUT.<filetype>'
 
-`filetype` of an output buffer can also be set to the corresponding type
-using `set ft=...`. Alternatively, it might be possible to set it per request
-buffer using a special modeline (requiring
-[let-modeline](http://www.vim.org/scripts/script.php?script_id=83)):
+`filetype` can also be set in the output buffer on an ad hoc basis.
 
-    # vim: let b:vrc_output_buffer_name = '__VRC_OUTPUT.json'
+    # vim: set ft=json
 
 ### 8. TODOs
 
@@ -359,8 +363,8 @@ Thanks to the contributors (in alphabetical order)
     @jojoyuji
     @korin
     @mjakl
-    @shanesmith
     @sethtrain
+    @shanesmith
     @tonyskn
     @torbjornvatn
 
