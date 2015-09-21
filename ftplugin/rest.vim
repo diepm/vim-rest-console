@@ -199,12 +199,12 @@ function! s:DisplayOutput(tmpBufName, output)
 
     call cursor(1, 0)
     let emptyLineNum = search('\v^\s*$', 'n')
-    let contentTypeLineNum = search('\v^Content-Type:', 'n', emptyLineNum)
+    let contentTypeLineNum = search('\v\c^Content-Type:', 'n', emptyLineNum)
 
     if contentTypeLineNum > 0
         let contentType = substitute(
               \   getline(contentTypeLineNum),
-              \   '\v^Content-Type:\s*([^;[:blank:]]*).*$',
+              \   '\v\c^Content-Type:\s*([^;[:blank:]]*).*$',
               \   '\1',
               \   'g'
               \)
