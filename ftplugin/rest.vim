@@ -3,6 +3,8 @@ let s:vrc_auto_format_response_patterns = {
 \   'xml': 'xmllint --format -',
 \}
 
+let s:vrc_block_delimiter = '\c\v^\s*HTTPS?://|^---'
+
 function! s:StrStrip(txt)
     return substitute(a:txt, '\v^\s*(.*)\s*$', '\1', 'g')
 endfunction
@@ -29,7 +31,7 @@ endfunction
 
 function! s:ParseRequest(listLines)
     """ Filter comments.
-    call filter(a:listLines, 'v:val !~ ''\v^\s*(#|//)''')
+    call filter(a:listLines, 'v:val !~ ''\v^\s*(#|//|---)?$''')
 
     """ Parse host.
     let numLines = len(a:listLines)
@@ -39,9 +41,9 @@ function! s:ParseRequest(listLines)
     while i < numLines
         let line = substitute(a:listLines[i], '\s+', '', 'g')
         let i += 1
-        if line =~? '\v^HTTPS?\://'
+        if line =~? '\v^\s*HTTPS?://'
             let host = line
-            if host =~? '\v^HTTPS'
+            if host =~? '\v^\s*HTTPS://'
                 let useSsl = 1
             endif
             break
@@ -257,32 +259,47 @@ function! s:RunQuery(textLines)
     \)
 endfunction
 
-function! VrcQuery() range
-    """ Determine the REST request block to process.
-    let bufStart = 0
-    let bufEnd = 0
-    if a:firstline < a:lastline
-        """ Use range if given.
-        let bufStart = a:firstline
-        let bufEnd = a:lastline
-    else
-        """ Find the request block the cursor stays within.
-        let bufStart = line('.')
-        if getline('.') !~? '\v^\s*HTTPS?\://'
-            let bufStart = search('\c\v^\s*HTTPS?\://', 'bn')
-            if !bufStart
-                echom 'Missing host'
-                return
-            endif
-        endif
+function! VrcQuery()
+    """ Remember the cursor position as we're going to jump around
+    let l:cursor_position = getpos('.')
 
-        """ Find the start of the next request block.
-        let bufEnd = search('\c\v^\s*HTTPS?\://', 'n') - 1
-        if bufEnd <= bufStart
-            let bufEnd = line('$')
+    """ Determine the REST request block to process.
+    let blockStart = 0
+    let blockEnd = 0
+
+    """ Find the request block the cursor stays within.
+    normal! $
+    let blockStart = search(s:vrc_block_delimiter, 'bn')
+    if !blockStart
+        echom 'Missing host/block start'
+        """ Restore the cursor position before returning
+        call cursor(l:cursor_position[1], l:cursor_position[2])
+        return
+    endif
+
+    """ Find the start of the next request block.
+    let blockEnd = search(s:vrc_block_delimiter, 'n') - 1
+    if blockEnd <= blockStart
+        let blockEnd = line('$')
+    endif
+
+    let queryBlock = getline(blockStart, blockEnd)
+
+    """ Extract the global definitions and prepend to the queryBlock
+    """ definition if the block starts with ---
+    if getline(blockStart) =~? '\v^---'
+        normal! gg
+        let globalEnd = search('\v^---', 'n') - 1
+        if globalEnd
+            let queryBlock = getline(0, globalEnd) + queryBlock
         endif
     endif
-    call s:RunQuery(getline(bufStart, bufEnd))
+
+    """ Restore the cursor position before parsing the queryBlock
+    call cursor(l:cursor_position[1], l:cursor_position[2])
+
+    """ Parse and execute the query
+    call s:RunQuery(queryBlock)
 endfunction
 
 function! VrcMap()
