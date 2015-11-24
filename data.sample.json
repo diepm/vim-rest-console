@@ -1,0 +1,8 @@
+{ "create": { "_type": "testtype" }}
+{ "name": "FOO", "value": "think about BAR", "date": "2015-01-05" }
+{ "create": { "_type": "testtype" }}
+{ "name": "FOO", "value": "some value of FOO", "date": "2015-01-06" }
+{ "create": { "_type": "testtype" }}
+{ "name": "BAR", "value": "some value of BAR", "date": "2015-01-07" }
+{ "create": { "_type": "testtype" }}
+{ "name": "BAR", "value": "think about FOO", "date": "2015-01-08" }
