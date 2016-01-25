@@ -46,6 +46,10 @@ For more examples, check out
 
 https://raw.githubusercontent.com/diepm/vim-rest-console/master/sample.rest
 
+there is also an alternative version using global settings:
+
+https://raw.githubusercontent.com/diepm/vim-rest-console/master/sample_global.rest
+
 The following examples assume that an ElasticSearch service is running at
 localhost. The pipe (`|`) indicates the current position of the cursor.
 
@@ -175,6 +179,28 @@ By default, the display/output buffer is named `__REST_response__`. If there
 are multiple VRC buffers, they all share the same display buffer. To have a
 separate output display for each VRC buffer, `b:vrc_output_buffer_name` can be
 set in the buffer scope.
+
+#### 5.1 Global Definitions
+
+A recent addition to VRC are global definitions. The global part is separated
+from the rest with three dashes `---`. Each query block has to start with three
+dashes as well. Essentially, the three dashes in the query block are replaced
+with the global definitions (so they should only contain host and header
+parts).
+
+    // global definitions
+    https://domain[:port]/...
+    Accept: application/json
+    ---
+
+    # Some documentation
+    ---
+    GET /some/query
+
+    # More documentation
+    ---
+    POST /form
+    var1=value
 
 ### 6. Configuration
 
