@@ -250,6 +250,10 @@ function! s:CallCurl(request)
         call add(curlArgs, '-H ' . shellescape('Content-Type: ' . contentType))
     endif
 
+    """ Timeout options.
+    call add(curlArgs, '--connect-timeout ' . s:GetOptValue('vrc_connect_timeout', 10))
+    call add(curlArgs, '--max-time ' . s:GetOptValue('vrc_max_time', 60))
+
     """ Add http verb.
     let httpVerb = a:request.httpVerb
     if httpVerb ==? 'GET'
