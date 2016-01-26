@@ -182,24 +182,40 @@ set in the buffer scope.
 
 #### 5.1 Global Definitions
 
-A recent addition to VRC are global definitions. The global part is separated
-from the rest with three dashes `---`. Each query block has to start with three
-dashes as well. Essentially, the three dashes in the query block are replaced
-with the global definitions (so they should only contain host and header
-parts).
+A recent addition to VRC are optional global definitions. The global part is
+separated from the rest with two dashes `--` and may include a default host
+and optional default headers. These values are always included in each
+request.
 
-    // global definitions
+Each request block has to start with either two dashes indicating it uses the
+default host from the global section or any host only used by this block. If
+a 'local host' is given, it's used instead of the one specified in the global
+section. Additionally, a request block can specify extra headers that will be
+merged with any global headers. Local headers overwrite global headers.
+
+    # Global definitions.
+    // Default host.
     https://domain[:port]/...
-    Accept: application/json
-    ---
 
-    # Some documentation
-    ---
+    // Default headers.
+    Accept: application/json
+    X-Header: Custom Data
+    --
+
+    # Request block that uses default values from the global section.
+    --
     GET /some/query
 
-    # More documentation
-    ---
-    POST /form
+    # Request block that specifies its own host and extra headers.
+    // Local host.
+    http://example.net:9200
+
+    // Extra headers.
+    Xtra-Header: Some Extra.
+    // This header will overwrite the one in the global section.
+    X-Header: New Data
+
+    POST /service
     var1=value
 
 ### 6. Configuration
@@ -334,6 +350,14 @@ the Content-Type. It's enabled by default. To disable:
 
 If `vrc_include_response_header` is disabled, this option does nothing.
 
+#### `vrc_connect_timeout`
+
+Corresponding to cUrl option `--connect-timeout`. Default: 10 seconds.
+
+#### `vrc_max_time`
+
+Corresponding to cUrl option `--max-time`. Default: 60 seconds.
+
 #### `vrc_debug`
 
 This option enables the debug mode by adding the `-v` option to the *curl*
@@ -378,6 +402,11 @@ Thanks to the contributors (in alphabetical order)
     @torbjornvatn
 
 ### 9. Changelog
+
+#### 2.1.0 (2016-01-25)
+
+* Support default values specified in a global section.
+* Add options for connection and max timeout.
 
 #### 2.0.0 (2015-11-24)
 
