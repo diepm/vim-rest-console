@@ -3,9 +3,11 @@ let s:vrc_auto_format_response_patterns = {
 \   'xml': 'xmllint --format -',
 \}
 
-let s:vrc_block_delimiter = '\c\v^\s*HTTPS?://|^---'
+let s:vrc_glob_delim      = '\v^--\s*$'
+let s:vrc_comment_delim   = '\c\v^\s*(#|//)'
+let s:vrc_block_delimiter = '\c\v^\s*HTTPS?://|^--'
 
-function! s:StrStrip(txt)
+function! s:StrTrim(txt)
     return substitute(a:txt, '\v^\s*(.*)\s*$', '\1', 'g')
 endfunction
 
@@ -29,26 +31,142 @@ function! s:GetDictValue(dictName, key, defVal)
     return a:defVal
 endfunction
 
-function! s:ParseRequest(listLines)
-    """ Filter comments.
-    call filter(a:listLines, 'v:val !~ ''\v^\s*(#|//|---)?$''')
+"""
+" @return [int, int] First and last line of the enclosing request block.
+"
+function! s:LineNumsRequestBlock()
+    let curPos = getcurpos()
 
-    """ Parse host.
-    let numLines = len(a:listLines)
-    let host = ''
-    let useSsl = 0
-    let i = 0
-    while i < numLines
-        let line = substitute(a:listLines[i], '\s+', '', 'g')
-        let i += 1
-        if line =~? '\v^\s*HTTPS?://'
-            let host = line
-            if host =~? '\v^\s*HTTPS://'
-                let useSsl = 1
-            endif
-            break
+    let blockStart = 0
+    let blockEnd   = 0
+    let lineNumGlobDelim = s:LineNumGlobSectionDelim()
+
+    """ Find the start of the enclosing request block.
+    normal! $
+    let blockStart = search(s:vrc_block_delimiter, 'bn')
+    if !blockStart || blockStart > curPos[1] || blockStart <= lineNumGlobDelim
+        call cursor(curPos[1:])
+        return [0, 0]
+    endif
+
+    """ Find the start of the next request block.
+    let blockEnd = search(s:vrc_block_delimiter, 'n') - 1
+    if blockEnd <= blockStart
+        let blockEnd = line('$')
+    endif
+    call cursor(curPos[1:])
+    return [blockStart, blockEnd]
+endfunction
+
+"""
+" @return int The line number of the global section delimiter.
+"
+function! s:LineNumGlobSectionDelim()
+    let curPos = getcurpos()
+    normal! gg
+    let lineNum = search(s:vrc_glob_delim, 'cn')
+    call cursor(curPos[1:])
+    return lineNum
+endfunction
+
+"""
+" Parse host between the given line numbers (inclusive end).
+"
+" @return [line num or 0, string]
+"
+function! s:ParseHost(start, end)
+    if a:end < a:start
+        return [0, '']
+    endif
+    let curPos = getcurpos()
+    call cursor(a:start, 1)
+    let lineNum = search('\v\c^\s*HTTPS?://', 'cn', a:end)
+    call cursor(curPos[1:])
+    if !lineNum
+        return [lineNum, '']
+    endif
+    return [lineNum, s:StrTrim(getline(lineNum))]
+endfunction
+
+"""
+" @return [int, string]
+"
+function! s:ParseVerbQuery(start, end)
+    let curPos = getcurpos()
+    call cursor(a:start, 1)
+    let lineNum = search('\c\v^(GET|POST|PUT|DELETE|HEAD)\s+', 'cn', a:end)
+    call cursor(curPos[1:])
+    if !lineNum
+        return [lineNum, '']
+    endif
+    return [lineNum, s:StrTrim(getline(lineNum))]
+endfunction
+
+"""
+" Parse header options between the given line numbers (inclusive end).
+"
+" @return dict
+"
+function! s:ParseHeaders(start, end)
+    let headers = {}
+    if (a:end < a:start)
+        return headers
+    endif
+    let lineBuf = getline(a:start, a:end)
+    for line in lineBuf
+        let line = s:StrTrim(line)
+        if line ==? '' || line =~? s:vrc_comment_delim
+            continue
         endif
-    endwhile
+        let sepIdx = stridx(line, ':')
+        if sepIdx > -1
+            let k = s:StrTrim(line[0:sepIdx - 1])
+            let headers[k] = s:StrTrim(line[sepIdx + 1:])
+        endif
+    endfor
+    return headers
+endfunction
+
+"""
+" @return dict { 'host': String, 'headers': {} }
+"
+function! s:ParseGlobSection()
+    let globSection = {
+    \   'host': '',
+    \   'headers': {},
+    \}
+
+    """ Search for the line of the global section delimiter.
+    let lastLine = s:LineNumGlobSectionDelim()
+    if !lastLine
+        return globSection
+    endif
+
+    """ Parse global host.
+    let [hostLine, host] = s:ParseHost(1, lastLine - 1)
+
+    """ Parse global headers.
+    let headers = s:ParseHeaders(hostLine + 1, lastLine - 1)
+    let globSection = {
+    \   'host': host,
+    \   'headers': headers,
+    \}
+    return globSection
+endfunction
+
+"""
+" @param  int start
+" @param  int end (inclusive)
+" @param  dict globSection
+" @return dict
+"
+function! s:ParseRequest(start, end, globSection)
+    """ Parse host.
+    let [lineNumHost, host] = s:ParseHost(a:start, a:end)
+    if !lineNumHost
+        let host = get(a:globSection, 'host', '')
+        let lineNumHost = a:start
+    endif
     if empty(host)
         return {
         \   'success': 0,
@@ -56,60 +174,53 @@ function! s:ParseRequest(listLines)
         \}
     endif
 
-    """ Parse REST query and request headers.
-    let restQuery = ''
-    let headers = {}
-    while i < numLines
-        let line = s:StrStrip(a:listLines[i])
-        let i += 1
-        """ Http verb is reached, get out of loop.
-        if line =~? '\v^(GET|POST|PUT|DELETE|HEAD)\s+'
-            let restQuery = line
-            break
-        endif
-
-        """ Otherwise, parse header line.
-        let sepIdx = stridx(line, ':')
-        if sepIdx > -1
-            let headerKey = s:StrStrip(line[0:sepIdx - 1])
-            let headerVal = s:StrStrip(line[sepIdx + 1:])
-            let headers[headerKey] = headerVal
-        endif
-    endwhile
-    if empty(restQuery)
+    """ Parse the HTTP verb query.
+    let [lineNumVerb, restQuery] = s:ParseVerbQuery(lineNumHost + 1, a:end)
+    if !lineNumVerb
         return {
         \   'success': 0,
         \   'msg': 'Missing query',
         \}
     endif
 
-    """ Parse http verb and query path.
+    """ Parse headers if any and merge with global headers.
+    let localHeaders = s:ParseHeaders(lineNumHost + 1, lineNumVerb - 1)
+    let headers = get(a:globSection, 'headers', {})
+    call extend(headers, localHeaders)
+
+    """ Parse http verb, query path, and data body.
     let [httpVerb; queryPath] = split(restQuery)
+    let dataBody = getline(lineNumVerb + 1, a:end)
+    call filter(dataBody, 'v:val !~ ''\v^\s*(#|//).*$''')
+    """ Some might need leading/trailing spaces in body rows.
+    "call map(dataBody, 's:StrTrim(v:val)')
     return {
     \   'success': 1,
     \   'msg': '',
     \   'host': host,
-    \   'useSsl': useSsl,
     \   'headers': headers,
     \   'httpVerb': httpVerb,
     \   'requestPath': join(queryPath, ''),
-    \   'dataBody': join(a:listLines[i :], '')
+    \   'dataBody': join(dataBody, '')
     \}
 endfunction
 
 function! s:CallCurl(request)
-    """ Construct CURL args.
+    """ Construct curl args.
     let curlArgs = ['-sS']
+
     let vrcIncludeHeader = s:GetOptValue('vrc_include_response_header', 1)
     if vrcIncludeHeader
         call add(curlArgs, '-i')
     endif
+
     let vrcDebug = s:GetOptValue('vrc_debug', 0)
     if vrcDebug
         call add(curlArgs, '-v')
     endif
+
     let secureSsl = s:GetOptValue('vrc_ssl_secure', 0)
-    if a:request.useSsl && !secureSsl
+    if a:request.host =~? '\v^\s*HTTPS://' && !secureSsl
         call add(curlArgs, '-k')
     endif
 
@@ -247,8 +358,9 @@ function! s:DisplayOutput(tmpBufName, output)
     execute origWin . 'wincmd w'
 endfunction
 
-function! s:RunQuery(textLines)
-    let request = s:ParseRequest(a:textLines)
+function! s:RunQuery(start, end)
+    let globSection = s:ParseGlobSection()
+    let request = s:ParseRequest(a:start, a:end, globSection)
     if !request.success
         echom request.msg
         return
@@ -259,47 +371,41 @@ function! s:RunQuery(textLines)
     \)
 endfunction
 
+"""
+" Restore the win line to the given previous line.
+"
+function! s:RestoreWinLine(prevLine)
+    let offset = winline() - a:prevLine
+    if !offset
+        return
+    elseif offset > 0
+        exec "normal! " . offset . "\<C-e>"
+    else
+        exec "normal! " . -offset . "\<C-y>"
+    endif
+endfunction
+
 function! VrcQuery()
-    """ Remember the cursor position as we're going to jump around
-    let l:cursor_position = getpos('.')
+    """ We'll jump pretty much. Save the current win line to set the view as before.
+    let curWinLine = winline()
 
-    """ Determine the REST request block to process.
-    let blockStart = 0
-    let blockEnd = 0
-
-    """ Find the request block the cursor stays within.
-    normal! $
-    let blockStart = search(s:vrc_block_delimiter, 'bn')
-    if !blockStart
-        echom 'Missing host/block start'
-        """ Restore the cursor position before returning
-        call cursor(l:cursor_position[1], l:cursor_position[2])
+    let curPos = getcurpos()
+    if curPos[1] <= s:LineNumGlobSectionDelim()
+        echom 'Cannot execute global section'
         return
     endif
 
-    """ Find the start of the next request block.
-    let blockEnd = search(s:vrc_block_delimiter, 'n') - 1
-    if blockEnd <= blockStart
-        let blockEnd = line('$')
+    """ Determine the REST request block to process.
+    let [blockStart, blockEnd] = s:LineNumsRequestBlock()
+    if !blockStart
+        call s:RestoreWinLine(curWinLine)
+        echom 'Missing host/block start'
+        return
     endif
-
-    let queryBlock = getline(blockStart, blockEnd)
-
-    """ Extract the global definitions and prepend to the queryBlock
-    """ definition if the block starts with ---
-    if getline(blockStart) =~? '\v^---'
-        normal! gg
-        let globalEnd = search('\v^---', 'n') - 1
-        if globalEnd
-            let queryBlock = getline(0, globalEnd) + queryBlock
-        endif
-    endif
-
-    """ Restore the cursor position before parsing the queryBlock
-    call cursor(l:cursor_position[1], l:cursor_position[2])
 
     """ Parse and execute the query
-    call s:RunQuery(queryBlock)
+    call s:RunQuery(blockStart, blockEnd)
+    call s:RestoreWinLine(curWinLine)
 endfunction
 
 function! VrcMap()
