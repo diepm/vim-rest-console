@@ -35,7 +35,7 @@ endfunction
 " @return [int, int] First and last line of the enclosing request block.
 "
 function! s:LineNumsRequestBlock()
-    let curPos = getcurpos()
+    let curPos = getpos('.')
 
     let blockStart = 0
     let blockEnd   = 0
@@ -62,7 +62,7 @@ endfunction
 " @return int The line number of the global section delimiter.
 "
 function! s:LineNumGlobSectionDelim()
-    let curPos = getcurpos()
+    let curPos = getpos('.')
     normal! gg
     let lineNum = search(s:vrc_glob_delim, 'cn')
     call cursor(curPos[1:])
@@ -78,7 +78,7 @@ function! s:ParseHost(start, end)
     if a:end < a:start
         return [0, '']
     endif
-    let curPos = getcurpos()
+    let curPos = getpos('.')
     call cursor(a:start, 1)
     let lineNum = search('\v\c^\s*HTTPS?://', 'cn', a:end)
     call cursor(curPos[1:])
@@ -92,7 +92,7 @@ endfunction
 " @return [int, string]
 "
 function! s:ParseVerbQuery(start, end)
-    let curPos = getcurpos()
+    let curPos = getpos('.')
     call cursor(a:start, 1)
     let lineNum = search('\c\v^(GET|POST|PUT|DELETE|HEAD)\s+', 'cn', a:end)
     call cursor(curPos[1:])
@@ -393,7 +393,7 @@ function! VrcQuery()
     """ We'll jump pretty much. Save the current win line to set the view as before.
     let curWinLine = winline()
 
-    let curPos = getcurpos()
+    let curPos = getpos('.')
     if curPos[1] <= s:LineNumGlobSectionDelim()
         echom 'Cannot execute global section'
         return

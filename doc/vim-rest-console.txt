@@ -1,4 +1,4 @@
-*vim-rest-console.txt*	A plug-in to help work with RESTful services.
+*vim-rest-console.txt*    A plug-in to help work with RESTful services.
 
                     __     ______   ____  ~
                     \ \   / /  _ \ / ___| ~
@@ -492,4 +492,4 @@ Thanks to the contributors (in alphabetical order)
 
 MIT
 
-vim:tw=78:ts=8:ft=help:norl:
+vim:tw=78:ts=4:ft=help:norl:
