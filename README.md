@@ -403,6 +403,10 @@ Thanks to the contributors (in alphabetical order)
 
 ### 9. Changelog
 
+#### 2.1.1 (2016-01-30)
+
+* Incompatibility fix.
+
 #### 2.1.0 (2016-01-25)
 
 * Support default values specified in a global section.
