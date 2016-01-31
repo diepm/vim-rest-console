@@ -94,7 +94,7 @@ endfunction
 function! s:ParseVerbQuery(start, end)
     let curPos = getpos('.')
     call cursor(a:start, 1)
-    let lineNum = search('\c\v^(GET|POST|PUT|DELETE|HEAD)\s+', 'cn', a:end)
+    let lineNum = search('\c\v^(GET|POST|PUT|DELETE|HEAD|PATCH)\s+', 'cn', a:end)
     call cursor(curPos[1:])
     if !lineNum
         return [lineNum, '']
