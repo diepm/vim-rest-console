@@ -112,7 +112,9 @@ function! s:ParseHeaders(start, end)
     if (a:end < a:start)
         return headers
     endif
+
     let lineBuf = getline(a:start, a:end)
+    let hasContentType = 0
     for line in lineBuf
         let line = s:StrTrim(line)
         if line ==? '' || line =~? s:vrc_comment_delim
@@ -120,10 +122,17 @@ function! s:ParseHeaders(start, end)
         endif
         let sepIdx = stridx(line, ':')
         if sepIdx > -1
-            let k = s:StrTrim(line[0:sepIdx - 1])
-            let headers[k] = s:StrTrim(line[sepIdx + 1:])
+            let key = s:StrTrim(line[0:sepIdx - 1])
+            if key ==? 'Content-Type'
+                let hasContentType = 1
+            endif
+            let headers[key] = s:StrTrim(line[sepIdx + 1:])
         endif
     endfor
+    if !hasContentType
+      let headers['Content-Type'] =
+      \   s:GetOptValue('vrc_header_content_type', 'application/json')
+    endif
     return headers
 endfunction
 
@@ -205,7 +214,10 @@ function! s:ParseRequest(start, end, globSection)
     \}
 endfunction
 
-function! s:CallCurl(request)
+"""
+" Construct the cUrl command given the request.
+"
+function! s:GetCurlCommand(request)
     """ Construct curl args.
     let curlArgs = ['-sS']
 
@@ -238,17 +250,9 @@ function! s:CallCurl(request)
     endif
 
     """ Add headers.
-    let hasContentType = 0
     for key in keys(a:request.headers)
-        if key ==? 'Content-Type'
-            let hasContentType = 1
-        endif
         call add(curlArgs, '-H ' . shellescape(key . ': ' . a:request.headers[key]))
     endfor
-    if !hasContentType
-        let contentType = s:GetOptValue('vrc_header_content_type', 'application/json')
-        call add(curlArgs, '-H ' . shellescape('Content-Type: ' . contentType))
-    endif
 
     """ Timeout options.
     call add(curlArgs, '--connect-timeout ' . s:GetOptValue('vrc_connect_timeout', 10))
@@ -256,40 +260,54 @@ function! s:CallCurl(request)
 
     """ Add http verb.
     let httpVerb = a:request.httpVerb
-    if httpVerb ==? 'GET'
-        call add(curlArgs, '--get')
-    elseif httpVerb ==? 'HEAD'
-        call add(curlArgs, '--head')
-    elseif httpVerb !=? 'POST'
-        """ Use -X/--request for any verbs other than POST.
-        call add(curlArgs, '-X ' . httpVerb)
-    endif
+    call add(curlArgs, s:GetCurlRequestOpt(httpVerb))
 
     """ Add data body.
-    if !empty(a:request.dataBody)
-        let dataBody = shellescape(a:request.dataBody)
-        if httpVerb ==? 'GET' || httpVerb ==? 'HEAD' || httpVerb ==? 'DELETE'
-            """ These verbs should not have request body. Make it as GET params.
-            call add(curlArgs, '--data-urlencode ' . dataBody)
-        elseif httpVerb ==? 'POST' || httpVerb ==? 'PUT'
-            """ Should load from a file? (dataBody is already shell-escaped).
-            if stridx(dataBody, '@') == 1
-                """ Load from a file.
-                call add(curlArgs, '--data-binary ' . dataBody)
-            else
-                call add(curlArgs, '--data ' . dataBody)
-            endif
+    let dataBody = a:request.dataBody
+    if !empty(dataBody)
+        call add(
+        \   curlArgs,
+        \   s:GetCurlDataOpt(httpVerb, dataBody) . ' ' . shellescape(dataBody)
+        \)
+    endif
+    return 'curl ' . join(curlArgs) . ' ' . shellescape(a:request.host . a:request.requestPath)
+endfunction
+
+"""
+" Get the cUrl option for request method (--get, --head, -X <verb>...)
+"
+function! s:GetCurlRequestOpt(httpVerb)
+    if a:httpVerb ==? 'GET'
+        return '--get'
+    elseif a:httpVerb ==? 'HEAD'
+        return '--head'
+    elseif a:httpVerb !=? 'POST'
+        """ Use -X/--request for any verbs other than POST.
+        return '-X ' . a:httpVerb
+    endif
+    """ Return empty string for POST.
+    return ''
+endfunction
+
+"""
+" Get the cUrl option to include data body (--data, --data-urlencode...)
+"
+function! s:GetCurlDataOpt(httpVerb, dataBody)
+    """ These verbs should have request body passed as POST params.
+    if a:httpVerb ==? 'POST'
+    \  || a:httpVerb ==? 'PUT'
+    \  || a:httpVerb ==? 'PATCH'
+        """ Should load from a file?
+        if stridx(a:dataBody, '@') == 0
+            """ Load from a file.
+            return '--data-binary'
+        else
+            return '--data'
         endif
     endif
 
-    """ Execute the CURL command.
-    let curlCmd = 'curl ' . join(curlArgs) . ' ' . shellescape(a:request.host . a:request.requestPath)
-    if vrcDebug
-        echom curlCmd
-    endif
-    silent !clear
-    redraw!
-    return system(curlCmd)
+    """ For other cases, request body is passed as GET params.
+    return '--data-urlencode'
 endfunction
 
 function! s:DisplayOutput(tmpBufName, output)
@@ -369,9 +387,16 @@ function! s:RunQuery(start, end)
         echom request.msg
         return
     endif
+
+    let curlCmd = s:GetCurlCommand(request)
+    if s:GetOptValue('vrc_debug', 0)
+        echom curlCmd
+    endif
+    silent !clear
+    redraw!
     call s:DisplayOutput(
     \   s:GetOptValue('vrc_output_buffer_name', '__REST_response__'),
-    \   s:CallCurl(request)
+    \   system(curlCmd)
     \)
 endfunction
 
