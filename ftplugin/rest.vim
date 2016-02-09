@@ -8,7 +8,7 @@ let s:vrc_comment_delim   = '\c\v^\s*(#|//)'
 let s:vrc_block_delimiter = '\c\v^\s*HTTPS?://|^--'
 
 function! s:StrTrim(txt)
-    return substitute(a:txt, '\v^\s*(.*)\s*$', '\1', 'g')
+    return substitute(a:txt, '\v^\s*([^[:space:]].*[^[:space:]])\s*$', '\1', 'g')
 endfunction
 
 function! s:GetOptValue(opt, defVal)
@@ -94,7 +94,11 @@ endfunction
 function! s:ParseVerbQuery(start, end)
     let curPos = getpos('.')
     call cursor(a:start, 1)
-    let lineNum = search('\c\v^(GET|POST|PUT|DELETE|HEAD|PATCH)\s+', 'cn', a:end)
+    let lineNum = search(
+    \   '\c\v^(GET|POST|PUT|DELETE|HEAD|PATCH|OPTIONS|TRACE)\s+',
+    \   'cn',
+    \   a:end
+    \)
     call cursor(curPos[1:])
     if !lineNum
         return [lineNum, '']
@@ -297,6 +301,7 @@ function! s:GetCurlDataOpt(httpVerb, dataBody)
     if a:httpVerb ==? 'POST'
     \  || a:httpVerb ==? 'PUT'
     \  || a:httpVerb ==? 'PATCH'
+    \  || a:httpVerb ==? 'OPTIONS'
         """ Should load from a file?
         if stridx(a:dataBody, '@') == 0
             """ Load from a file.
