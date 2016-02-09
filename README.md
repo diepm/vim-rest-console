@@ -24,6 +24,7 @@ Requirements:
 * Particularly useful for working with REST services that require the request
   body to be sent in JSON such as ElasticSearch.
 * Syntax highlighting.
+* Supported verbs: GET, POST, PUT, HEAD, PATCH, OPTIONS, and TRACE.
 
 ### 3. Installation
 
@@ -396,12 +397,18 @@ Thanks to the contributors (in alphabetical order)
     @jojoyuji
     @korin
     @mjakl
+    @p1otr
+    @rlisowski
     @sethtrain
     @shanesmith
     @tonyskn
     @torbjornvatn
 
 ### 9. Changelog
+
+#### 2.2.0 (2016-02-08)
+
+* Add support for PATCH, OPTIONS, and TRACE.
 
 #### 2.1.1 (2016-01-30)
 
