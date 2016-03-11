@@ -271,7 +271,7 @@ function! s:GetCurlCommand(request)
     if !empty(dataBody)
         call add(
         \   curlArgs,
-        \   s:GetCurlDataOpt(httpVerb, dataBody) . ' ' . shellescape(dataBody)
+        \   s:GetCurlDataArgs(httpVerb, dataBody)
         \)
     endif
     return 'curl ' . join(curlArgs) . ' ' . shellescape(a:request.host . a:request.requestPath)
@@ -296,7 +296,7 @@ endfunction
 """
 " Get the cUrl option to include data body (--data, --data-urlencode...)
 "
-function! s:GetCurlDataOpt(httpVerb, dataBody)
+function! s:GetCurlDataArgs(httpVerb, dataBody)
     """ These verbs should have request body passed as POST params.
     if a:httpVerb ==? 'POST'
     \  || a:httpVerb ==? 'PUT'
@@ -305,14 +305,14 @@ function! s:GetCurlDataOpt(httpVerb, dataBody)
         """ Should load from a file?
         if stridx(a:dataBody, '@') == 0
             """ Load from a file.
-            return '--data-binary'
+            return '--data-binary ' . shellescape(a:dataBody)
         else
-            return '--data'
+            return '--data ' . shellescape(a:dataBody)
         endif
     endif
 
     """ For other cases, request body is passed as GET params.
-    return '--data-urlencode'
+    return '--data-urlencode ' . shellescape(a:dataBody)
 endfunction
 
 function! s:DisplayOutput(tmpBufName, output)
