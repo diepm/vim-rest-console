@@ -214,7 +214,7 @@ function! s:ParseRequest(start, end, globSection)
     \   'headers': headers,
     \   'httpVerb': httpVerb,
     \   'requestPath': join(queryPath, ''),
-    \   'dataBody': join(dataBody, '')
+    \   'dataBody': substitute(join(dataBody, "\n"), '\v\n$', '', '')
     \}
 endfunction
 
@@ -312,7 +312,11 @@ function! s:GetCurlDataArgs(httpVerb, dataBody)
     endif
 
     """ For other cases, request body is passed as GET params.
-    return '--data-urlencode ' . shellescape(a:dataBody)
+    let result = ""
+    for line in split(a:dataBody, '\v\n')
+      let result .= ' --data-urlencode ' . shellescape(line)
+    endfor
+    return result
 endfunction
 
 function! s:DisplayOutput(tmpBufName, output)
