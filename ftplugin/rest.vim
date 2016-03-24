@@ -204,7 +204,10 @@ function! s:ParseRequest(start, end, globSection)
     """ Parse http verb, query path, and data body.
     let [httpVerb; queryPath] = split(restQuery)
     let dataBody = getline(lineNumVerb + 1, a:end)
-    call filter(dataBody, 'v:val !~ ''\v^\s*(#|//).*$''')
+
+    """ Filter out comment and blank lines.
+    call filter(dataBody, 'v:val !~ ''\v^\s*(#|//).*$|\v^\s*$''')
+
     """ Some might need leading/trailing spaces in body rows.
     "call map(dataBody, 's:StrTrim(v:val)')
     return {
@@ -214,7 +217,7 @@ function! s:ParseRequest(start, end, globSection)
     \   'headers': headers,
     \   'httpVerb': httpVerb,
     \   'requestPath': join(queryPath, ''),
-    \   'dataBody': substitute(join(dataBody, "\n"), '\v\n$', '', '')
+    \   'dataBody': dataBody
     \}
 endfunction
 
@@ -296,27 +299,27 @@ endfunction
 """
 " Get the cUrl option to include data body (--data, --data-urlencode...)
 "
-function! s:GetCurlDataArgs(httpVerb, dataBody)
+function! s:GetCurlDataArgs(httpVerb, dataLines)
     """ These verbs should have request body passed as POST params.
     if a:httpVerb ==? 'POST'
     \  || a:httpVerb ==? 'PUT'
     \  || a:httpVerb ==? 'PATCH'
     \  || a:httpVerb ==? 'OPTIONS'
+        """ Concat data lines.
+        let dataBody = join(a:dataLines, '')
+
         """ Should load from a file?
-        if stridx(a:dataBody, '@') == 0
+        if stridx(dataBody, '@') == 0
             """ Load from a file.
-            return '--data-binary ' . shellescape(a:dataBody)
+            return '--data-binary ' . shellescape(dataBody)
         else
-            return '--data ' . shellescape(a:dataBody)
+            return '--data ' . shellescape(dataBody)
         endif
     endif
 
     """ For other cases, request body is passed as GET params.
-    let result = ""
-    for line in split(a:dataBody, '\v\n')
-      let result .= ' --data-urlencode ' . shellescape(line)
-    endfor
-    return result
+    call map(a:dataLines, '"--data-urlencode " . shellescape(v:val)')
+    return join(a:dataLines, ' ')
 endfunction
 
 function! s:DisplayOutput(tmpBufName, output)
