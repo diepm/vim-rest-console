@@ -219,6 +219,36 @@ merged with any global headers. Local headers overwrite global headers.
     POST /service
     var1=value
 
+#### 5.2 Line-by-line Request Body
+
+Since version 2.3.0, the request body can be specified on a line-by-line
+basis. It's useful for name-value pair services. Each line of the request
+body is passed to cURL using `--data` or `--data-urlencode` depending on
+the verb.
+
+To enable,
+
+    let g:vrc_split_request_body = 1
+
+or
+
+    let b:vrc_split_request_body = 1
+
+Then the request body can be specified as
+
+    #
+    # The following params in the request body will be
+    # sent using `--data-urlencode`
+    #
+    http://localhost
+    Content-Type: text/html; charset=UTF-8
+    GET /service
+    var1=value1
+    var2=value2
+
+This option won't take effect for `GET` request if the option
+`vrc_allow_get_request_body` is set.
+
 ### 6. Configuration
 
 VRC supports a few configurable variables. Each of them can have a global or
@@ -231,86 +261,30 @@ or in Vim for the buffer scope by
 
     let b:option_name = value
 
-#### `vrc_trigger`
+#### `vrc_allow_get_request_body`
 
-This option defines the trigger key. It's `<C-j>` by default. To remap the key,
+Allow GET request to have a request body or not. Default: 0.
 
-    let g:vrc_trigger = '<C-k>'
+If this option is set, `-X GET` is used and the request body is passed to
+cURL as a whole using `--data`.
 
-#### `vrc_ssl_secure`
+This option is useful for such services as ElasticSearch.
 
-This option tells cURL to check or not check for the SSL certificates. It's
-turned off by default. To enable,
+    #
+    # With vrc_allow_get_request_body = 1
+    #
+    http://localhost:9200
+    Content-Type: application/json
 
-    let g:vrc_ssl_secure = 1
+    GET /testindex/testtype/_search
+    {
+      "query": {
+        "match": { "name": "FOO" }
+      }
+    }
 
-#### `vrc_output_buffer_name`
-
-This option sets the name for the output/display buffer. By default, it's set
-to `__REST_response__`. To assign a different name,
-
-    let g:vrc_output_buffer_name = '__NEW_NAME__'
-
-This option is useful in working with multiple VRC buffers where each one has
-its own output display. For this, the option can be set in the buffer scope as
-
-    let b:vrc_output_buffer_name = '__REST_1_OUTPUT__'
-
-#### `vrc_header_content_type`
-
-This option is to set the header content type of the request. It defaults to
-`application/json`. To set a different default content type,
-
-    let g:vrc_header_content_type = 'application/x-www-form-urlencoded'
-
-It can also be set in the buffer scope by
-
-    let b:vrc_header_content_type = 'application/json; charset=utf-8'
-
-If `Content-Type` is specified in the request block, it overrides this setting.
-
-#### `vrc_cookie_jar`
-
-This option enables persisting cookies between requests in a cookie jar file.
-Useful when the underlying API uses session or authorization cookies.
-
-    let g:vrc_cookie_jar = '/tmp/vrc_cookie_jar'
-
-It can also be set in the buffer scope by
-
-    let b:vrc_cookie_jar = './jar'
-
-#### `vrc_set_default_mapping`
-
-This option is to enable/disable the trigger key mapping. It's enabled by
-default. To disable the mapping,
-
-    let g:vrc_set_default_mapping = 0
-
-Once the mapping is disabled, the request block can be executed by
-
-    :call VrcQuery()
-
-#### `vrc_follow_redirects`
-
-This option enables the cURL -L/--location option that makes it follow
-redirects. It's turned off by default. To enable
-
-    let g:vrc_follow_redirects = 1
-
-#### `vrc_include_response_header`
-
-This option enables the inclusion of the response header information mode by
-adding the `-i` option to the *curl* command. It's turned on by default. To
-disable
-
-    let g:vrc_include_response_header = 0
-
-If this option is disabled, the following options will not take effect.
-
-* `vrc_auto_format_response_enabled`
-* `vrc_auto_format_response_patterns`
-* `vrc_syntax_highlight_response`
+Be careful that when this option is enabled, the request body is always sent
+as a whole regardless of `vrc_split_request_body`.
 
 #### `vrc_auto_format_response_enabled`
 
@@ -342,6 +316,106 @@ Adjust the list by defining the global or buffer variable, like so:
 
 If `vrc_include_response_header` is disabled, this option does nothing.
 
+#### `vrc_connect_timeout`
+
+Corresponding to cUrl option `--connect-timeout`. Default: 10 seconds.
+
+#### `vrc_cookie_jar`
+
+This option enables persisting cookies between requests in a cookie jar file.
+Useful when the underlying API uses session or authorization cookies.
+
+    let g:vrc_cookie_jar = '/tmp/vrc_cookie_jar'
+
+It can also be set in the buffer scope by
+
+    let b:vrc_cookie_jar = './jar'
+
+#### `vrc_debug`
+
+This option enables the debug mode by adding the `-v` option to the *curl*
+command and also `echom` the command to the Vim console. It's turned off by
+default.
+
+#### `vrc_follow_redirects`
+
+This option enables the cURL -L/--location option that makes it follow
+redirects. It's turned off by default. To enable
+
+    let g:vrc_follow_redirects = 1
+
+#### `vrc_header_content_type`
+
+This option is to set the header content type of the request. It defaults to
+`application/json`. To set a different default content type,
+
+    let g:vrc_header_content_type = 'application/x-www-form-urlencoded'
+
+It can also be set in the buffer scope by
+
+    let b:vrc_header_content_type = 'application/json; charset=utf-8'
+
+If `Content-Type` is specified in the request block, it overrides this setting.
+
+#### `vrc_include_response_header`
+
+This option enables the inclusion of the response header information mode by
+adding the `-i` option to the *curl* command. It's turned on by default. To
+disable
+
+    let g:vrc_include_response_header = 0
+
+If this option is disabled, the following options will not take effect.
+
+* `vrc_auto_format_response_enabled`
+* `vrc_auto_format_response_patterns`
+* `vrc_syntax_highlight_response`
+
+#### `vrc_max_time`
+
+Corresponding to cUrl option `--max-time`. Default: 60 seconds.
+
+#### `vrc_output_buffer_name`
+
+This option sets the name for the output/display buffer. By default, it's set
+to `__REST_response__`. To assign a different name,
+
+    let g:vrc_output_buffer_name = '__NEW_NAME__'
+
+This option is useful in working with multiple VRC buffers where each one has
+its own output display. For this, the option can be set in the buffer scope as
+
+    let b:vrc_output_buffer_name = '__REST_1_OUTPUT__'
+
+#### `vrc_set_default_mapping`
+
+This option is to enable/disable the trigger key mapping. It's enabled by
+default. To disable the mapping,
+
+    let g:vrc_set_default_mapping = 0
+
+Once the mapping is disabled, the request block can be executed by
+
+    :call VrcQuery()
+
+#### `vrc_split_request_body`
+
+Determine if the request body should be processed line by line. Default: 0.
+
+If this option is set, each line of the request body is passed to cURL using
+either `--data` or `--data-urlencode` depending on the verb.
+
+If the verb is `GET` and the option `vrc_allow_get_request_body` is enabled,
+this option doesn't take effect; the request body is always sent as a whole
+using `--data`.
+
+#### `vrc_ssl_secure`
+
+This option tells cURL to check or not check for the SSL certificates. It's
+turned off by default. To enable,
+
+    let g:vrc_ssl_secure = 1
+
 #### `vrc_syntax_highlight_response`
 
 This option enables the syntax highlighting of the response body according to
@@ -351,19 +425,11 @@ the Content-Type. It's enabled by default. To disable:
 
 If `vrc_include_response_header` is disabled, this option does nothing.
 
-#### `vrc_connect_timeout`
+#### `vrc_trigger`
 
-Corresponding to cUrl option `--connect-timeout`. Default: 10 seconds.
+This option defines the trigger key. It's `<C-j>` by default. To remap the key,
 
-#### `vrc_max_time`
-
-Corresponding to cUrl option `--max-time`. Default: 60 seconds.
-
-#### `vrc_debug`
-
-This option enables the debug mode by adding the `-v` option to the *curl*
-command and also `echom` the command to the Vim console. It's turned off by
-default.
+    let g:vrc_trigger = '<C-k>'
 
 ### 7. Tips 'n Tricks
 
@@ -397,6 +463,7 @@ Thanks to the contributors (in alphabetical order)
     @jojoyuji
     @korin
     @mjakl
+    @nathanaelkane
     @p1otr
     @rlisowski
     @sethtrain
@@ -405,6 +472,11 @@ Thanks to the contributors (in alphabetical order)
     @torbjornvatn
 
 ### 9. Changelog
+
+#### 2.3.0 (2016-03-24)
+
+* GET request can have request body.
+* Request body can be specified on a line-by-line basis.
 
 #### 2.2.0 (2016-02-08)
 
