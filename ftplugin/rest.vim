@@ -285,6 +285,9 @@ endfunction
 "
 function! s:GetCurlRequestOpt(httpVerb)
     if a:httpVerb ==? 'GET'
+        if s:GetOptValue('vrc_allow_get_request_body', 0)
+            return '-X GET'
+        endif
         return '--get'
     elseif a:httpVerb ==? 'HEAD'
         return '--head'
@@ -299,27 +302,44 @@ endfunction
 """
 " Get the cUrl option to include data body (--data, --data-urlencode...)
 "
+" @param  dict httpVerb
+" @param  list dataLines
+" @return string
+"
 function! s:GetCurlDataArgs(httpVerb, dataLines)
     """ These verbs should have request body passed as POST params.
     if a:httpVerb ==? 'POST'
     \  || a:httpVerb ==? 'PUT'
     \  || a:httpVerb ==? 'PATCH'
     \  || a:httpVerb ==? 'OPTIONS'
-        """ Concat data lines.
-        let dataBody = join(a:dataLines, '')
-
-        """ Should load from a file?
-        if stridx(dataBody, '@') == 0
-            """ Load from a file.
-            return '--data-binary ' . shellescape(dataBody)
-        else
-            return '--data ' . shellescape(dataBody)
+        """ If data is loaded from file.
+        if stridx(get(a:dataLines, 0, ''), '@') == 0
+            return '--data-binary ' . shellescape(a:dataLines[0])
         endif
+
+        """ If request body is split line by line.
+        if s:GetOptValue('vrc_split_request_body', 0)
+            call map(a:dataLines, '"--data " . shellescape(v:val)')
+            return join(a:dataLines)
+        endif
+
+        """ Otherwise, send the request body as a whole.
+        return '--data ' . shellescape(join(a:dataLines, ''))
+    endif
+
+    """ If verb is GET and GET request body is allowed.
+    if a:httpVerb ==? 'GET' && s:GetOptValue('vrc_allow_get_request_body', 0)
+        return '--data ' . shellescape(join(a:dataLines, ''))
     endif
 
     """ For other cases, request body is passed as GET params.
-    call map(a:dataLines, '"--data-urlencode " . shellescape(v:val)')
-    return join(a:dataLines, ' ')
+    if s:GetOptValue('vrc_split_request_body', 0)
+        """ If request body is split, url-encode each line.
+        call map(a:dataLines, '"--data-urlencode " . shellescape(v:val)')
+        return join(a:dataLines)
+    endif
+    """ Otherwise, url-encode and send the request body as a whole.
+    return '--data-urlencode ' . shellescape(join(a:dataLines, ''))
 endfunction
 
 function! s:DisplayOutput(tmpBufName, output)
