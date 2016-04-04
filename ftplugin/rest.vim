@@ -291,12 +291,8 @@ function! s:GetCurlRequestOpt(httpVerb)
         return '--get'
     elseif a:httpVerb ==? 'HEAD'
         return '--head'
-    elseif a:httpVerb !=? 'POST'
-        """ Use -X/--request for any verbs other than POST.
-        return '-X ' . a:httpVerb
     endif
-    """ Return empty string for POST.
-    return ''
+    return '-X ' . a:httpVerb
 endfunction
 
 """
