@@ -1,3 +1,5 @@
+setlocal commentstring=#%s
+
 let s:vrc_auto_format_response_patterns = {
 \   'json': 'python -m json.tool',
 \   'xml': 'xmllint --format -',
