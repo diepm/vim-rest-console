@@ -347,8 +347,13 @@ function! s:DisplayOutput(tmpBufName, output)
     let origWin = winnr()
     let outputWin = bufwinnr(bufnr(a:tmpBufName))
     if outputWin == -1
+        let cmdSplit = 'vsplit'
+        if s:GetOptValue('vrc_horizontal_split', 0)
+            let cmdSplit = 'split'
+        endif
+
         """ Create view if not loadded or hidden.
-        execute 'rightbelow vsplit ' . a:tmpBufName
+        execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
         setlocal buftype=nofile
     else
         """ View already shown, switch to it.

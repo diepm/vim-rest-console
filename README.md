@@ -357,6 +357,12 @@ It can also be set in the buffer scope by
 
 If `Content-Type` is specified in the request block, it overrides this setting.
 
+#### `vrc_horizontal_split`
+
+By default, the output buffer is displayed to the right of the rest buffer
+(vertical split). If this option is set, the output buffer is displayed
+below the rest buffer.
+
 #### `vrc_include_response_header`
 
 This option enables the inclusion of the response header information mode by
@@ -472,6 +478,11 @@ Thanks to the contributors (in alphabetical order)
     @torbjornvatn
 
 ### 9. Changelog
+
+#### 2.4.0 (2016-04-11)
+
+* Support POST empty body.
+* Add option to horizontal-split the output buffer.
 
 #### 2.3.0 (2016-03-24)
 
