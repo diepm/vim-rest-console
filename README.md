@@ -488,6 +488,7 @@ Thanks to the contributors (in alphabetical order)
 
 * Support POST empty body.
 * Add option to horizontal-split the output buffer.
+* Option to transform `\uXXXX` instances to corresponding symbols.
 
 #### 2.3.0 (2016-03-24)
 
