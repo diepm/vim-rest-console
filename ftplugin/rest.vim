@@ -390,6 +390,9 @@ function! s:DisplayOutput(tmpBufName, output)
                 \)
                 if v:shell_error == 0
                     execute (emptyLineNum + 1) . ',$delete _'
+                    if s:GetOptValue('vrc_auto_format_uhex', 0)
+                        let formattedBody = substitute(formattedBody, '\v\\u(\x{4})', '\=nr2char("0x" . submatch(1), 1)', 'g')
+                    endif
                     call append('$', split(formattedBody, '\v\n'))
                 elseif s:GetOptValue('vrc_debug', 0)
                     echom "VRC: auto-format error: " . v:shell_error

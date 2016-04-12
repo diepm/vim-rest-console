@@ -24,6 +24,7 @@ CONTENTS                                                         *VrcContents*
       vrc_allow_get_request_body................ |vrc_allow_get_request_body|
       vrc_auto_format_response_enabled.... |vrc_auto_format_response_enabled|
       vrc_auto_format_response_patterns...|vrc_auto_format_response_patterns|
+      vrc_auto_format_uhex.............................|vrc_auto_format_uhex|
       vrc_connect_timeout.............................. |vrc_connect_timeout|
       vrc_cookie_jar........................................ |vrc_cookie_jar|
       vrc_debug.................................................. |vrc_debug|
@@ -365,6 +366,12 @@ Adjust the list by defining the global or buffer variable, like so:
     \}
 <
 If |vrc_include_response_header| is disabled, this option does nothing.
+
+------------------------------------------------------------------------------
+*vrc_auto_format_uhex*
+
+If set, VRC will try to transform all unicode `\uXXXX` instances in the
+response to the corresponding symbols. It's turned of by default.
 
 ------------------------------------------------------------------------------
 *vrc_connect_timeout*

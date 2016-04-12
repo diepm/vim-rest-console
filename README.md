@@ -316,6 +316,11 @@ Adjust the list by defining the global or buffer variable, like so:
 
 If `vrc_include_response_header` is disabled, this option does nothing.
 
+#### `vrc_auto_format_uhex`
+
+If set, VRC will try to transform all unicode `\uXXXX` instances in the
+response to the corresponding symbols. It's turned of by default.
+
 #### `vrc_connect_timeout`
 
 Corresponding to cUrl option `--connect-timeout`. Default: 10 seconds.
