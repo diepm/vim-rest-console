@@ -39,6 +39,7 @@ CONTENTS                                                         *VrcContents*
       vrc_ssl_secure........................................ |vrc_ssl_secure|
       vrc_syntax_highlight_response...........|vrc_syntax_highlight_response|
       vrc_trigger.............................................. |vrc_trigger|
+      vrc_show_command.....................................|vrc_show_command|
   7. Tips 'n Tricks................................................. |VrcTnt|
       7.1 POST Data in Bulk................................. |VrcTntDataBulk|
       7.2 Syntax Highlighting.................................. |VrcTntStxHi|
@@ -508,6 +509,13 @@ If |vrc_include_response_header| is disabled, this option does nothing.
 This option defines the trigger key. It's <C-j> by default. To remap the key,
 >
     let g:vrc_trigger = '<C-k>'
+------------------------------------------------------------------------------
+*vrc_show_command*
+
+This option enables the printing of the executed curl command in the output
+pane. It's disabled by default. To enable:
+>
+    let g:vrc_show_command = 1
 <
 ==============================================================================
                                                                     *VrcTnt*

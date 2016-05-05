@@ -432,9 +432,15 @@ function! s:RunQuery(start, end)
     endif
     silent !clear
     redraw!
+
+    let output = system(curlCmd)
+    if s:GetOptValue('vrc_show_command', 0)
+        let output = curlCmd . "\n\n" . output
+    endif
+
     call s:DisplayOutput(
     \   s:GetOptValue('vrc_output_buffer_name', '__REST_response__'),
-    \   system(curlCmd)
+    \   output
     \)
 endfunction
 
