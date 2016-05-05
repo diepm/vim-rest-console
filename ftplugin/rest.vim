@@ -114,7 +114,8 @@ endfunction
 " @return dict
 "
 function! s:ParseHeaders(start, end)
-    let headers = {}
+    let contentTypeOpt = s:GetOptValue('vrc_header_content_type', 'application/json')
+    let headers = {'Content-Type': contentTypeOpt}
     if (a:end < a:start)
         return headers
     endif
@@ -129,16 +130,9 @@ function! s:ParseHeaders(start, end)
         let sepIdx = stridx(line, ':')
         if sepIdx > -1
             let key = s:StrTrim(line[0:sepIdx - 1])
-            if key ==? 'Content-Type'
-                let hasContentType = 1
-            endif
             let headers[key] = s:StrTrim(line[sepIdx + 1:])
         endif
     endfor
-    if !hasContentType
-      let headers['Content-Type'] =
-      \   s:GetOptValue('vrc_header_content_type', 'application/json')
-    endif
     return headers
 endfunction
 
