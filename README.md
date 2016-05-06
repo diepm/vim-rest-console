@@ -409,6 +409,13 @@ Once the mapping is disabled, the request block can be executed by
 
     :call VrcQuery()
 
+#### `vrc_show_command`
+
+This option enables the printing of the executed curl command in the output
+pane. It's disabled by default. To enable:
+
+    let g:vrc_show_command = 1
+
 #### `vrc_split_request_body`
 
 Determine if the request body should be processed line by line. Default: 0.
@@ -471,6 +478,7 @@ output highlighting based on `filetype`, place this setting in `.vimrc`:
 Thanks to the contributors (in alphabetical order)
 
     @dan-silva
+    @dflupu
     @jojoyuji
     @korin
     @mjakl
@@ -483,6 +491,12 @@ Thanks to the contributors (in alphabetical order)
     @torbjornvatn
 
 ### 9. Changelog
+
+#### 2.5.0 (2016-05-05)
+
+* Set `commentstring` so that lines can be commented by commenters.
+* Fix Content-Type to default to `application/json`.
+* Add option `vrc_show_command` to display the cUrl command along with output.
 
 #### 2.4.0 (2016-04-11)
 

@@ -35,11 +35,11 @@ CONTENTS                                                         *VrcContents*
       vrc_max_time............................................ |vrc_max_time|
       vrc_output_buffer_name........................ |vrc_output_buffer_name|
       vrc_set_default_mapping...................... |vrc_set_default_mapping|
+      vrc_show_command.....................................|vrc_show_command|
       vrc_split_request_body........................ |vrc_split_request_body|
       vrc_ssl_secure........................................ |vrc_ssl_secure|
       vrc_syntax_highlight_response...........|vrc_syntax_highlight_response|
       vrc_trigger.............................................. |vrc_trigger|
-      vrc_show_command.....................................|vrc_show_command|
   7. Tips 'n Tricks................................................. |VrcTnt|
       7.1 POST Data in Bulk................................. |VrcTntDataBulk|
       7.2 Syntax Highlighting.................................. |VrcTntStxHi|
@@ -474,6 +474,14 @@ Once the mapping is disabled, the request block can be executed by
     :call VrcQuery()
 <
 ------------------------------------------------------------------------------
+*vrc_show_command*
+
+This option enables the printing of the executed curl command in the output
+pane. It's disabled by default. To enable:
+>
+    let g:vrc_show_command = 1
+<
+------------------------------------------------------------------------------
 *vrc_split_request_body*
 
 Determine if the request body should be processed line by line. Default: 0.
@@ -509,13 +517,6 @@ If |vrc_include_response_header| is disabled, this option does nothing.
 This option defines the trigger key. It's <C-j> by default. To remap the key,
 >
     let g:vrc_trigger = '<C-k>'
-------------------------------------------------------------------------------
-*vrc_show_command*
-
-This option enables the printing of the executed curl command in the output
-pane. It's disabled by default. To enable:
->
-    let g:vrc_show_command = 1
 <
 ==============================================================================
                                                                     *VrcTnt*
@@ -554,6 +555,7 @@ output highlighting based on `filetype`, place this setting in '.vimrc':
 Thanks to the contributors (in alphabetical order)
 >
     @dan-silva
+    @dflupu
     @jojoyuji
     @korin
     @mjakl
@@ -568,6 +570,12 @@ Thanks to the contributors (in alphabetical order)
 ===============================================================================
                                                                  *VrcChangelog*
 9. Changelog~
+
+2.5.0 (2016-05-05)
+
+* Set `commentstring` so that lines can be commented by commenters.
+* Fix Content-Type to default to `application/json`.
+* Add option `vrc_show_command` to display the cUrl command along with output.
 
 2.4.0 (2016-04-11)
 
