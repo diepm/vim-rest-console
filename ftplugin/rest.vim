@@ -163,11 +163,14 @@ function! s:ParseVals(start, end)
     return vals
 endfunction
 
+"""
+" @return dict { 'host': String, 'headers': {}, 'vals': {} }
 "
 function! s:ParseGlobSection()
     let globSection = {
     \   'host': '',
     \   'headers': {},
+    \   'vals': {},
     \}
 
     """ Search for the line of the global section delimiter.
@@ -181,9 +184,14 @@ function! s:ParseGlobSection()
 
     """ Parse global headers.
     let headers = s:ParseHeaders(hostLine + 1, lastLine - 1)
+
+    """ Parse global vals.
+    let vals = s:ParseVals(hostLine + 1, lastLine - 1)
+
     let globSection = {
     \   'host': host,
     \   'headers': headers,
+    \   'vals': vals,
     \}
     return globSection
 endfunction
