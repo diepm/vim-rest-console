@@ -137,7 +137,32 @@ function! s:ParseHeaders(start, end)
 endfunction
 
 """
-" @return dict { 'host': String, 'headers': {} }
+" Parse values in global section
+"
+" @return dict
+"
+function! s:ParseVals(start, end)
+    let vals = {}
+    if (a:end < a:start)
+        return vals
+    endif
+
+    let lineBuf = getline(a:start, a:end)
+
+    for line in lineBuf
+        let line = s:StrTrim(line)
+        if line ==? '' || line =~? s:vrc_comment_delim
+            continue
+        endif
+        let sepIdx = stridx(line, '=')
+        if sepIdx > -1
+            let key = s:StrTrim(line[0:sepIdx - 1])
+            let vals[key] = s:StrTrim(line[sepIdx + 1:])
+        endif
+    endfor
+    return vals
+endfunction
+
 "
 function! s:ParseGlobSection()
     let globSection = {
