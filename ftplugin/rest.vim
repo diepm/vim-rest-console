@@ -230,9 +230,17 @@ function! s:ParseRequest(start, end, globSection)
     let headers = get(a:globSection, 'headers', {})
     call extend(headers, localHeaders)
 
+    let vals = get(a:globSection, 'vals', {})
+
     """ Parse http verb, query path, and data body.
-    let [httpVerb; queryPath] = split(restQuery)
+    let [httpVerb; queryPathList] = split(restQuery)
     let dataBody = getline(lineNumVerb + 1, a:end)
+
+    """ Search and replace values in queryPath
+    let queryPath = join(queryPathList, '')
+    for key in keys(vals)
+        let queryPath = substitute(queryPath, ":" . key, vals[key], "")
+    endfor
 
     """ Filter out comment and blank lines.
     call filter(dataBody, 'v:val !~ ''\v^\s*(#|//).*$|\v^\s*$''')
@@ -245,7 +253,7 @@ function! s:ParseRequest(start, end, globSection)
     \   'host': host,
     \   'headers': headers,
     \   'httpVerb': httpVerb,
-    \   'requestPath': join(queryPath, ''),
+    \   'requestPath': queryPath,
     \   'dataBody': dataBody
     \}
 endfunction
