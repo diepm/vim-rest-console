@@ -137,12 +137,40 @@ function! s:ParseHeaders(start, end)
 endfunction
 
 """
-" @return dict { 'host': String, 'headers': {} }
+" Parse values in global section
+"
+" @return dict
+"
+function! s:ParseVals(start, end)
+    let vals = {}
+    if (a:end < a:start)
+        return vals
+    endif
+
+    let lineBuf = getline(a:start, a:end)
+
+    for line in lineBuf
+        let line = s:StrTrim(line)
+        if line ==? '' || line =~? s:vrc_comment_delim
+            continue
+        endif
+        let sepIdx = stridx(line, '=')
+        if sepIdx > -1
+            let key = s:StrTrim(line[0:sepIdx - 1])
+            let vals[key] = s:StrTrim(line[sepIdx + 1:])
+        endif
+    endfor
+    return vals
+endfunction
+
+"""
+" @return dict { 'host': String, 'headers': {}, 'vals': {} }
 "
 function! s:ParseGlobSection()
     let globSection = {
     \   'host': '',
     \   'headers': {},
+    \   'vals': {},
     \}
 
     """ Search for the line of the global section delimiter.
@@ -156,9 +184,14 @@ function! s:ParseGlobSection()
 
     """ Parse global headers.
     let headers = s:ParseHeaders(hostLine + 1, lastLine - 1)
+
+    """ Parse global vals.
+    let vals = s:ParseVals(hostLine + 1, lastLine - 1)
+
     let globSection = {
     \   'host': host,
     \   'headers': headers,
+    \   'vals': vals,
     \}
     return globSection
 endfunction
@@ -197,9 +230,17 @@ function! s:ParseRequest(start, end, globSection)
     let headers = get(a:globSection, 'headers', {})
     call extend(headers, localHeaders)
 
+    let vals = get(a:globSection, 'vals', {})
+
     """ Parse http verb, query path, and data body.
-    let [httpVerb; queryPath] = split(restQuery)
+    let [httpVerb; queryPathList] = split(restQuery)
     let dataBody = getline(lineNumVerb + 1, a:end)
+
+    """ Search and replace values in queryPath
+    let queryPath = join(queryPathList, '')
+    for key in keys(vals)
+        let queryPath = substitute(queryPath, ":" . key, vals[key], "")
+    endfor
 
     """ Filter out comment and blank lines.
     call filter(dataBody, 'v:val !~ ''\v^\s*(#|//).*$|\v^\s*$''')
@@ -212,7 +253,7 @@ function! s:ParseRequest(start, end, globSection)
     \   'host': host,
     \   'headers': headers,
     \   'httpVerb': httpVerb,
-    \   'requestPath': join(queryPath, ''),
+    \   'requestPath': queryPath,
     \   'dataBody': dataBody
     \}
 endfunction
