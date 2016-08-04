@@ -198,11 +198,13 @@ endfunction
 
 """
 " @param  int start
+" @param  int resumeFrom (inclusive)
 " @param  int end (inclusive)
 " @param  dict globSection
 " @return dict
 "
-function! s:ParseRequest(start, end, globSection)
+function! s:ParseRequest(start, resumeFrom, end, globSection)
+    echom "start: " . a:start . " resumeFrom: " . a:resumeFrom . " end: " . a:end
     """ Parse host.
     let [lineNumHost, host] = s:ParseHost(a:start, a:end)
     if !lineNumHost
@@ -217,12 +219,20 @@ function! s:ParseRequest(start, end, globSection)
     endif
 
     """ Parse the HTTP verb query.
-    let [lineNumVerb, restQuery] = s:ParseVerbQuery(lineNumHost + 1, a:end)
+    let [lineNumVerb, restQuery] = s:ParseVerbQuery(a:resumeFrom, a:end)
     if !lineNumVerb
         return {
         \   'success': 0,
         \   'msg': 'Missing query',
         \}
+    endif
+
+    """ Parse the next HTTP verb query.
+    let resumeFrom = lineNumVerb + 1
+    let [lineNumNextVerb, nextRestQuery] = s:ParseVerbQuery(lineNumVerb + 1, a:end)
+    if !lineNumNextVerb
+        let resumeFrom = a:end + 1
+        let lineNumNextVerb = a:end + 1
     endif
 
     """ Parse headers if any and merge with global headers.
@@ -234,7 +244,7 @@ function! s:ParseRequest(start, end, globSection)
 
     """ Parse http verb, query path, and data body.
     let [httpVerb; queryPathList] = split(restQuery)
-    let dataBody = getline(lineNumVerb + 1, a:end)
+    let dataBody = getline(lineNumVerb + 1, lineNumNextVerb - 1)
 
     """ Search and replace values in queryPath
     let queryPath = join(queryPathList, '')
@@ -249,6 +259,7 @@ function! s:ParseRequest(start, end, globSection)
     "call map(dataBody, 's:StrTrim(v:val)')
     return {
     \   'success': 1,
+    \   'resumeFrom': resumeFrom,
     \   'msg': '',
     \   'host': host,
     \   'headers': headers,
@@ -455,23 +466,31 @@ endfunction
 
 function! s:RunQuery(start, end)
     let globSection = s:ParseGlobSection()
-    let request = s:ParseRequest(a:start, a:end, globSection)
-    if !request.success
-        echom request.msg
-        return
-    endif
+    let output = ""
+    let resumeFrom = a:start
+    while resumeFrom < a:end
+        let request = s:ParseRequest(a:start, resumeFrom, a:end, globSection)
+        if !request.success
+            echom request.msg
+            return
+        endif
 
-    let curlCmd = s:GetCurlCommand(request)
-    if s:GetOptValue('vrc_debug', 0)
-        echom curlCmd
-    endif
-    silent !clear
-    redraw!
+        let curlCmd = s:GetCurlCommand(request)
+        if s:GetOptValue('vrc_debug', 1)
+            echom curlCmd
+        endif
+        silent !clear
+        redraw!
 
-    let output = system(curlCmd)
-    if s:GetOptValue('vrc_show_command', 0)
-        let output = curlCmd . "\n\n" . output
-    endif
+        let currentOutput = system(curlCmd)
+        if s:GetOptValue('vrc_show_command', 0)
+            let currentOutput = curlCmd . "\n\n" . currentOutput
+        endif
+
+        let output = output . "\n\n\n\n" . currentOutput
+
+        let resumeFrom = request.resumeFrom
+    endwhile
 
     call s:DisplayOutput(
     \   s:GetOptValue('vrc_output_buffer_name', '__REST_response__'),
