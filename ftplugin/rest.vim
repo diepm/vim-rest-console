@@ -475,7 +475,7 @@ function! s:RunQuery(start, end)
         endif
 
         let curlCmd = s:GetCurlCommand(request)
-        if s:GetOptValue('vrc_debug', 1)
+        if s:GetOptValue('vrc_debug', 0)
             echom curlCmd
         endif
         silent !clear
