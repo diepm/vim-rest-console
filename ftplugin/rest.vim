@@ -204,7 +204,6 @@ endfunction
 " @return dict
 "
 function! s:ParseRequest(start, resumeFrom, end, globSection)
-    echom "start: " . a:start . " resumeFrom: " . a:resumeFrom . " end: " . a:end
     """ Parse host.
     let [lineNumHost, host] = s:ParseHost(a:start, a:end)
     if !lineNumHost
