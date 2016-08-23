@@ -398,6 +398,13 @@ its own output display. For this, the option can be set in the buffer scope as
 
     let b:vrc_output_buffer_name = '__REST_1_OUTPUT__'
 
+#### `vrc_resolve_to_ipv4`
+
+This option forces names to be resolved to IPV4 addresses only by adding the
+'--ipv4' option to the 'curl' command. It's turned off by default. To enable
+
+    let g:vrc_resolve_to_ipv4 = 1
+
 #### `vrc_set_default_mapping`
 
 This option is to enable/disable the trigger key mapping. It's enabled by

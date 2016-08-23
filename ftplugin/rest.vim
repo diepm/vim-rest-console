@@ -290,6 +290,12 @@ function! s:GetCurlCommand(request)
         call add(curlArgs, '-k')
     endif
 
+    """ Add --ipv4
+    let resolveToIpv4 = s:GetOptValue('vrc_resolve_to_ipv4', 0)
+    if resolveToIpv4
+        call add(curlArgs, '--ipv4')
+    endif
+
     """ Add --cookie-jar
     let cookieJar = s:GetOptValue('vrc_cookie_jar', 0)
     if !empty(cookieJar)
