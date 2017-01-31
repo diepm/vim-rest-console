@@ -219,7 +219,7 @@ merged with any global headers. Local headers overwrite global headers.
     POST /service
     var1=value
 
-#### 5.2 Global Variable Declaration~
+#### 5.2 Global Variable Declaration
 
 VRC now supports variable declarations in the global scope. These variables
 then can be used in the query paths. Notice: values are not url-encoded.
