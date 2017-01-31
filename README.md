@@ -219,7 +219,27 @@ merged with any global headers. Local headers overwrite global headers.
     POST /service
     var1=value
 
-#### 5.2 Line-by-line Request Body
+#### 5.2 Global Variable Declaration~
+
+VRC now supports variable declarations in the global scope. These variables
+then can be used in the query paths. Notice: values are not url-encoded.
+
+    # Global scope.
+    http://host
+
+    // Variable declarations (value passed as is).
+    city = Some%20City
+    zip = 12345
+    --
+    # End global scope.
+
+    --
+    GET /city/:city
+
+    --
+    GET /city/:city/zip/:zip
+
+#### 5.3 Line-by-line Request Body
 
 Since version 2.3.0, the request body can be specified on a line-by-line
 basis. It's useful for name-value pair services. Each line of the request
@@ -248,6 +268,16 @@ Then the request body can be specified as
 
 This option won't take effect for `GET` request if the option
 `vrc_allow_get_request_body` is set.
+
+#### 5.4 Consecutive Request Verbs
+
+A request block may have consecutive request verbs. The output of each request
+verb is appended to the output view.
+
+    http://localhost:9200
+    PUT /test
+    GET /test
+    DELETE /test
 
 ### 6. Configuration
 
@@ -293,7 +323,8 @@ default. To disable:
 
     let g:vrc_auto_format_response_enabled = 0
 
-If `vrc_include_response_header` is disabled, this option does nothing.
+If `vrc_include_response_header` is disabled, this option depends on the
+option `vrc_response_default_content_type`.
 
 #### `vrc_auto_format_response_patterns`
 
@@ -314,7 +345,8 @@ Adjust the list by defining the global or buffer variable, like so:
     \   'xml': 'tidy -xml -i -'
     \}
 
-If `vrc_include_response_header` is disabled, this option does nothing.
+If `vrc_include_response_header` is disabled, this option depends on the
+option `vrc_response_default_content_type`.
 
 #### `vrc_auto_format_uhex`
 
@@ -376,11 +408,12 @@ disable
 
     let g:vrc_include_response_header = 0
 
-If this option is disabled, the following options will not take effect.
+If this option is disabled, the option `vrc_response_default_content_type`
+can be set to an appropriate value for the following options to work properly.
 
-* `vrc_auto_format_response_enabled`
-* `vrc_auto_format_response_patterns`
-* `vrc_syntax_highlight_response`
+    * `vrc_auto_format_response_enabled`
+    * `vrc_auto_format_response_patterns`
+    * `vrc_syntax_highlight_response`
 
 #### `vrc_max_time`
 
@@ -404,6 +437,19 @@ This option forces names to be resolved to IPV4 addresses only by adding the
 '--ipv4' option to the 'curl' command. It's turned off by default. To enable
 
     let g:vrc_resolve_to_ipv4 = 1
+
+#### `vrc_response_default_content_type`
+
+This option is to set the default content type of the response. It's useful
+when we don't want to include the response header in the output view (setting
+`vrc_include_response_header` to 0) but still want the output to be formatted
+or syntax-highlighted.
+
+    let b:vrc_response_default_content_type = 'application/json'
+
+or
+
+    let g:vrc_response_default_content_type = 'text/xml'
 
 #### `vrc_set_default_mapping`
 
@@ -448,7 +494,8 @@ the Content-Type. It's enabled by default. To disable:
 
     let g:vrc_syntax_highlight_response = 0
 
-If `vrc_include_response_header` is disabled, this option does nothing.
+If `vrc_include_response_header` is disabled, this option depends on the
+option `vrc_response_default_content_type`.
 
 #### `vrc_trigger`
 
@@ -482,10 +529,11 @@ output highlighting based on `filetype`, place this setting in `.vimrc`:
 
 ### 8. Contributors
 
-Thanks to the contributors (in alphabetical order)
+Thanks to the contributors (in alphabetical order of GitHub account)
 
     @dan-silva
     @dflupu
+    @iamFIREcracker
     @jojoyuji
     @korin
     @mjakl
@@ -494,10 +542,21 @@ Thanks to the contributors (in alphabetical order)
     @rlisowski
     @sethtrain
     @shanesmith
+    @tdroxler
     @tonyskn
     @torbjornvatn
 
 ### 9. Changelog
+
+#### 2.6.0 (2017-01-30)
+
+* Support global variable declaration.
+* Support consecutive request verbs.
+* Bug fix: When `vrc_show_command` is set, the command is displayed in the
+  quickfix window instead of the output view. This fixes the output
+  formatting bug when the option is enabled.
+* Add option `vrc_response_default_content_type` to set the default content-
+  type of the response.
 
 #### 2.5.0 (2016-05-05)
 

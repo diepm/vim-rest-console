@@ -391,10 +391,20 @@ function! s:GetCurlDataArgs(httpVerb, dataLines)
     return '--data-urlencode ' . shellescape(join(a:dataLines, ''))
 endfunction
 
-function! s:DisplayOutput(tmpBufName, output)
+"""
+" @param string tmpBufName
+" @param dict outputInfo
+"   {
+"     'outputChunks': list[string],
+"     'commands': list[string],
+"   }
+"
+function! s:DisplayOutput(tmpBufName, outputInfo)
     """ Get view options before working in the view buffer.
     let autoFormatResponse = s:GetOptValue('vrc_auto_format_response_enabled', 1)
     let syntaxHighlightResponse = s:GetOptValue('vrc_syntax_highlight_response', 1)
+    let includeResponseHeader = s:GetOptValue('vrc_include_response_header', 1)
+    let contentType = s:GetOptValue('vrc_response_default_content_type', '')
 
     """ Setup view.
     let origWin = winnr()
@@ -416,35 +426,55 @@ function! s:DisplayOutput(tmpBufName, output)
     """ Display output in view.
     setlocal modifiable
     silent! normal! ggdG
-    call setline('.', split(substitute(a:output, '[[:return:]]', '', 'g'), '\v\n'))
+    let output = join(a:outputInfo['outputChunks'], "\n\n")
+    call setline('.', split(substitute(output, '[[:return:]]', '', 'g'), '\v\n'))
 
-    call cursor(1, 0)
-    let emptyLineNum = search('\v^\s*$', 'n')
-    let contentTypeLineNum = search('\v\c^Content-Type:', 'n', emptyLineNum)
+    """ Display commands in quickfix window if any.
+    if (!empty(a:outputInfo['commands']))
+        execute 'cgetexpr' string(a:outputInfo['commands'])
+        copen
+        execute outputWin 'wincmd w'
+    endif
 
-    if contentTypeLineNum > 0
-        let contentType = substitute(
-              \   getline(contentTypeLineNum),
-              \   '\v\c^Content-Type:\s*([^;[:blank:]]*).*$',
-              \   '\1',
-              \   'g'
-              \)
+    """ Detect content-type based on the returned header.
+    let emptyLineNum = 0
+    if includeResponseHeader
+        call cursor(1, 0)
+        let emptyLineNum = search('\v^\s*$', 'n')
+        let contentTypeLineNum = search('\v\c^Content-Type:', 'n', emptyLineNum)
+
+        if contentTypeLineNum > 0
+            let contentType = substitute(
+            \   getline(contentTypeLineNum),
+            \   '\v\c^Content-Type:\s*([^;[:blank:]]*).*$',
+            \   '\1',
+            \   'g'
+            \)
+        endif
+    endif
+
+    """ Continue with options depending content-type.
+    if !empty(contentType)
         let fileType = substitute(contentType, '\v^.*/(.*\+)?(.*)$', '\2', 'g')
 
         """ Auto-format the response.
         if autoFormatResponse
             let formatCmd = s:GetDictValue('vrc_auto_format_response_patterns', fileType, '')
-
             if !empty(formatCmd)
                 """ Auto-format response body
                 let formattedBody = system(
                 \   formatCmd,
-                \   join(getline(emptyLineNum + 0, '$'), "\n")
+                \   getline(emptyLineNum, '$')
                 \)
                 if v:shell_error == 0
-                    execute (emptyLineNum + 1) . ',$delete _'
+                    silent! execute (emptyLineNum + 1) . ',$delete _'
                     if s:GetOptValue('vrc_auto_format_uhex', 0)
-                        let formattedBody = substitute(formattedBody, '\v\\u(\x{4})', '\=nr2char("0x" . submatch(1), 1)', 'g')
+                        let formattedBody = substitute(
+                        \   formattedBody,
+                        \   '\v\\u(\x{4})',
+                        \   '\=nr2char("0x" . submatch(1), 1)',
+                        \   'g'
+                        \)
                     endif
                     call append('$', split(formattedBody, '\v\n'))
                 elseif s:GetOptValue('vrc_debug', 0)
@@ -465,14 +495,23 @@ function! s:DisplayOutput(tmpBufName, output)
         endif
     endif
 
+    """ Finalize view.
     setlocal nomodifiable
     execute origWin . 'wincmd w'
 endfunction
 
 function! s:RunQuery(start, end)
     let globSection = s:ParseGlobSection()
-    let output = ""
+    let outputInfo = {
+    \   'outputChunks': [],
+    \   'commands': [],
+    \}
+
+    " The `while loop` is to support multiple
+    " requests using consecutive verbs.
     let resumeFrom = a:start
+    let shouldShowCommand = s:GetOptValue('vrc_show_command', 0)
+    let shouldDebug = s:GetOptValue('vrc_debug', 0)
     while resumeFrom < a:end
         let request = s:ParseRequest(a:start, resumeFrom, a:end, globSection)
         if !request.success
@@ -481,25 +520,22 @@ function! s:RunQuery(start, end)
         endif
 
         let curlCmd = s:GetCurlCommand(request)
-        if s:GetOptValue('vrc_debug', 0)
+        if shouldDebug
             echom curlCmd
         endif
         silent !clear
         redraw!
 
-        let currentOutput = system(curlCmd)
-        if s:GetOptValue('vrc_show_command', 0)
-            let currentOutput = curlCmd . "\n\n" . currentOutput
+        call add(outputInfo['outputChunks'], system(curlCmd))
+        if shouldShowCommand
+            call add(outputInfo['commands'], curlCmd)
         endif
-
-        let output = output . "\n\n\n\n" . currentOutput
-
         let resumeFrom = request.resumeFrom
     endwhile
 
     call s:DisplayOutput(
     \   s:GetOptValue('vrc_output_buffer_name', '__REST_response__'),
-    \   output
+    \   outputInfo
     \)
 endfunction
 
