@@ -374,6 +374,12 @@ This option enables the debug mode by adding the `-v` option to the *curl*
 command and also `echom` the command to the Vim console. It's turned off by
 default.
 
+#### `vrc_elasticsearch_support`
+
+If on, the data of ElasticSearch's *_bulk* API can also be specified directly
+in the request block instead of indirectly via an external file. It's off by
+default.
+
 #### `vrc_follow_redirects`
 
 This option enables the cURL -L/--location option that makes it follow

@@ -323,11 +323,10 @@ function! s:GetCurlCommand(request)
     call add(curlArgs, s:GetCurlRequestOpt(httpVerb))
 
     """ Add data body.
-    let dataBody = a:request.dataBody
-    if !empty(dataBody)
+    if !empty(a:request.dataBody)
         call add(
         \   curlArgs,
-        \   s:GetCurlDataArgs(httpVerb, dataBody)
+        \   s:GetCurlDataArgs(a:request)
         \)
     endif
     return 'curl ' . join(curlArgs) . ' ' . shellescape(a:request.host . a:request.requestPath)
@@ -351,44 +350,52 @@ endfunction
 """
 " Get the cUrl option to include data body (--data, --data-urlencode...)
 "
-" @param  dict httpVerb
-" @param  list dataLines
+" @param dict request
 " @return string
 "
-function! s:GetCurlDataArgs(httpVerb, dataLines)
+function! s:GetCurlDataArgs(request)
+    let httpVerb = a:request.httpVerb
+    let dataLines = a:request.dataBody
+
     """ These verbs should have request body passed as POST params.
-    if a:httpVerb ==? 'POST'
-    \  || a:httpVerb ==? 'PUT'
-    \  || a:httpVerb ==? 'PATCH'
-    \  || a:httpVerb ==? 'OPTIONS'
+    if httpVerb ==? 'POST'
+    \  || httpVerb ==? 'PUT'
+    \  || httpVerb ==? 'PATCH'
+    \  || httpVerb ==? 'OPTIONS'
         """ If data is loaded from file.
-        if stridx(get(a:dataLines, 0, ''), '@') == 0
-            return '--data-binary ' . shellescape(a:dataLines[0])
+        if stridx(get(dataLines, 0, ''), '@') == 0
+            return '--data-binary ' . shellescape(dataLines[0])
         endif
 
         """ If request body is split line by line.
         if s:GetOptValue('vrc_split_request_body', 0)
-            call map(a:dataLines, '"--data " . shellescape(v:val)')
-            return join(a:dataLines)
+            call map(dataLines, '"--data " . shellescape(v:val)')
+            return join(dataLines)
         endif
 
-        """ Otherwise, send the request body as a whole.
-        return '--data ' . shellescape(join(a:dataLines, ''))
+        """ If ElasticSearch support is on and it's a _bulk request.
+        if s:GetOptValue('vrc_elasticsearch_support', 0) && match(a:request.requestPath, '/_bulk') > -1
+            " shellescape also escapes \n (<NL>) to \\n, need to replace back.
+            return '--data ' . substitute(shellescape(join(dataLines, "\n") . "\n"), '\\\n', "\n", 'g')
+        endif
+
+        """ Otherwise, just join data using empty space.
+        return '--data ' . shellescape(join(dataLines, ''))
     endif
 
     """ If verb is GET and GET request body is allowed.
-    if a:httpVerb ==? 'GET' && s:GetOptValue('vrc_allow_get_request_body', 0)
-        return '--data ' . shellescape(join(a:dataLines, ''))
+    if httpVerb ==? 'GET' && s:GetOptValue('vrc_allow_get_request_body', 0)
+        return '--data ' . shellescape(join(dataLines, ''))
     endif
 
     """ For other cases, request body is passed as GET params.
     if s:GetOptValue('vrc_split_request_body', 0)
         """ If request body is split, url-encode each line.
-        call map(a:dataLines, '"--data-urlencode " . shellescape(v:val)')
-        return join(a:dataLines)
+        call map(dataLines, '"--data-urlencode " . shellescape(v:val)')
+        return join(dataLines)
     endif
     """ Otherwise, url-encode and send the request body as a whole.
-    return '--data-urlencode ' . shellescape(join(a:dataLines, ''))
+    return '--data-urlencode ' . shellescape(join(dataLines, ''))
 endfunction
 
 """
