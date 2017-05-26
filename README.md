@@ -41,6 +41,8 @@ To install using [Vundle](https://github.com/gmarik/Vundle.vim)
     " Add this line to .vimrc
     Plugin 'diepm/vim-rest-console'
 
+Other methods should work as well.
+
 ### 4. Examples
 
 For more examples, check out
@@ -59,29 +61,23 @@ localhost. The pipe (`|`) indicates the current position of the cursor.
 * From the command line, run a new Vim instance.
 * Set the buffer `filetype` to `rest` by
 
-    ```
     :set ft=rest
-    ```
 
 * Type in
 
-    ```
     http://localhost:9200
     GET /_cat/nodes?v|
-    ```
 
 * Hit the trigger key (`<C-j>` by default).
 * A new vertically split buffer will be shown to display the output.
 * Change the request block to (or add another one)
 
-    ```
     http://localhost:9200
     POST /testindex/testtype
     {
       "key": "new key",
       "value": "new value"|
     }
-    ```
 
 * Hit the trigger key with the cursor placed anywhere within this request block.
 * The display buffer will be updated with the new response.
@@ -92,24 +88,18 @@ This example continues the previous one.
 
 * Open a new VRC buffer in a new tab
 
-    ```
     :tabe NewVrc.rest
-    ```
 
 * Since the new buffer has the extension `rest`, the VRC plug-in is active for
   this one.
 * Set `b:vrc_output_buffer_name` of this buffer to `__NEW_VRC__`
 
-    ```
     :let b:vrc_output_buffer_name = '__NEW_VRC__'
-    ```
 
 * Type in a request block such as
 
-    ```
     http://localhost:9200
     GET /testindex/_search?pretty|
-    ```
 
 * Hit the trigger key.
 * A new display buffer will be created showing the response.
@@ -126,11 +116,13 @@ a file with the extension `.rest` or a buffer with `filetype` explicitly set to
     :set ft=rest
 
 A **VRC buffer** can have one or many REST request blocks. A **request block**
-contains a *host*, *optional headers*, *query*, and an *optional request body*
-(usually used by POST). A block is defined as follows.
+contains a *host*, *optional cUrl options*, *optional headers*, *query*, and an
+*optional request body* (usually used by POST). A block is defined as follows.
 
     # host
     http[s]://domain[:port]
+
+    [optional cUrl options]
 
     [optional headers]
 
@@ -181,22 +173,60 @@ are multiple VRC buffers, they all share the same display buffer. To have a
 separate output display for each VRC buffer, `b:vrc_output_buffer_name` can be
 set in the buffer scope.
 
-#### 5.1 Global Definitions
+#### 5.1 cUrl Options
 
-A recent addition to VRC are optional global definitions. The global part is
-separated from the rest with two dashes `--` and may include a default host
-and optional default headers. These values are always included in each
-request.
+A recent addition to VRC is the ability to specify cUrl options. These may be
+specified by the VRC option `vrc_curl_opts` or declaring in the
+[global section](#global-definitions) of a REST buffer and request blocks.
+
+All specified cUrl options are merged together when a cUrl command is built.
+For the same keys (cUrl switch) specified at different scopes, the ones of the
+request blocks overwrite the ones in the global section then overwrite the
+ones defined by `vrc_curl_opts`.
+
+For the deprecated VRC options, they can be replaced by cUrl options. For
+example, assuming they have been defined as follows.
+
+    let g:vrc_connect_timeout = 10
+    let g:vrc_cookie_jar = '/path/to/cookie'
+    let g:vrc_follow_redirects = 1
+    let g:vrc_include_response_header = 1
+    let g:vrc_max_time = 60
+    let g:vrc_resolve_to_ipv4 = 1
+    let g:vrc_ssl_secure = 1
+
+Using cUrl options,
+
+    let g:vrc_curl_opts = {
+      \ '--connect-timeout' : 10,
+      \ '-b': '/path/to/cookie',
+      \ '-c': '/path/to/cookie',
+      \ '-L': '',
+      \ '-i': '',
+      \ '--max-time': 60,
+      \ '--ipv4': '',
+      \ '-k': '',
+    \}
+
+#### 5.2 Global Definitions
+
+The global section is separated from the rest with two dashes `--` and may
+include a default host, optional default cUrl options (buffer scope) and
+optional default headers. These values are always included in each request.
 
 Each request block has to start with either two dashes indicating it uses the
 default host from the global section or any host only used by this block. If
 a 'local host' is given, it's used instead of the one specified in the global
-section. Additionally, a request block can specify extra headers that will be
-merged with any global headers. Local headers overwrite global headers.
+section. Additionally, a request block can specify extra cUrl options and
+headers. Local headers are merged with and overwrite global headers.
 
     # Global definitions.
     // Default host.
     https://domain[:port]/...
+
+    // Default (buffer scope) cUrl options.
+    -L
+    --connect-timeout 10
 
     // Default headers.
     Accept: application/json
@@ -211,6 +241,14 @@ merged with any global headers. Local headers overwrite global headers.
     // Local host.
     http://example.net:9200
 
+    // Local cUrl opts.
+    -k
+    --ipv4
+    // This cUrl option overwrites the one in the global section.
+    --connect-timeout 30
+    -b /path/to/cookie
+    -c /path/to/cookie
+
     // Extra headers.
     Xtra-Header: Some Extra.
     // This header will overwrite the one in the global section.
@@ -219,7 +257,7 @@ merged with any global headers. Local headers overwrite global headers.
     POST /service
     var1=value
 
-#### 5.2 Global Variable Declaration
+#### 5.3 Global Variable Declaration
 
 VRC now supports variable declarations in the global scope. These variables
 then can be used in the query paths. Notice: values are not url-encoded.
@@ -239,7 +277,7 @@ then can be used in the query paths. Notice: values are not url-encoded.
     --
     GET /city/:city/zip/:zip
 
-#### 5.3 Line-by-line Request Body
+#### 5.4 Line-by-line Request Body
 
 Since version 2.3.0, the request body can be specified on a line-by-line
 basis. It's useful for name-value pair services. Each line of the request
@@ -281,240 +319,29 @@ verb is appended to the output view.
 
 ### 6. Configuration
 
-VRC supports a few configurable variables. Each of them can have a global or
-buffer scope (the latter takes priority). An option can be set in `.vimrc` for
-the global scope by
-
-    let g:option_name = value
-
-or in Vim for the buffer scope by
-
-    let b:option_name = value
-
-#### `vrc_allow_get_request_body`
-
-Allow GET request to have a request body or not. Default: 0.
-
-If this option is set, `-X GET` is used and the request body is passed to
-cURL as a whole using `--data`.
-
-This option is useful for such services as ElasticSearch.
-
-    #
-    # With vrc_allow_get_request_body = 1
-    #
-    http://localhost:9200
-    Content-Type: application/json
-
-    GET /testindex/testtype/_search
-    {
-      "query": {
-        "match": { "name": "FOO" }
-      }
-    }
-
-Be careful that when this option is enabled, the request body is always sent
-as a whole regardless of `vrc_split_request_body`.
-
-#### `vrc_auto_format_response_enabled`
-
-This option enables the automatic formatting of the response. It's enabled by
-default. To disable:
-
-    let g:vrc_auto_format_response_enabled = 0
-
-If `vrc_include_response_header` is disabled, this option depends on the
-option `vrc_response_default_content_type`.
-
-#### `vrc_auto_format_response_patterns`
-
-This option defines which external tools to use to auto-format the response
-body according to the Content-Type.
-
-The defaults are:
-
-    let s:vrc_auto_format_response_patterns = {
-    \   'json': 'python -m json.tool',
-    \   'xml': 'xmllint --format -',
-    \}
-
-Adjust the list by defining the global or buffer variable, like so:
-
-    let g:vrc_auto_format_response_patterns = {
-    \   'json': ''
-    \   'xml': 'tidy -xml -i -'
-    \}
-
-If `vrc_include_response_header` is disabled, this option depends on the
-option `vrc_response_default_content_type`.
-
-#### `vrc_auto_format_uhex`
-
-If set, VRC will try to transform all unicode `\uXXXX` instances in the
-response to the corresponding symbols. It's turned of by default.
-
-#### `vrc_connect_timeout`
-
-Corresponding to cUrl option `--connect-timeout`. Default: 10 seconds.
-
-#### `vrc_cookie_jar`
-
-This option enables persisting cookies between requests in a cookie jar file.
-Useful when the underlying API uses session or authorization cookies.
-
-    let g:vrc_cookie_jar = '/tmp/vrc_cookie_jar'
-
-It can also be set in the buffer scope by
-
-    let b:vrc_cookie_jar = './jar'
-
-#### `vrc_debug`
-
-This option enables the debug mode by adding the `-v` option to the *curl*
-command and also `echom` the command to the Vim console. It's turned off by
-default.
-
-#### `vrc_elasticsearch_support`
-
-If on, the data of ElasticSearch's *_bulk* API can also be specified directly
-in the request block instead of indirectly via an external file. It's off by
-default.
-
-#### `vrc_follow_redirects`
-
-This option enables the cURL -L/--location option that makes it follow
-redirects. It's turned off by default. To enable
-
-    let g:vrc_follow_redirects = 1
-
-#### `vrc_header_content_type`
-
-This option is to set the header content type of the request. It defaults to
-`application/json`. To set a different default content type,
-
-    let g:vrc_header_content_type = 'application/x-www-form-urlencoded'
-
-It can also be set in the buffer scope by
-
-    let b:vrc_header_content_type = 'application/json; charset=utf-8'
-
-If `Content-Type` is specified in the request block, it overrides this setting.
-
-#### `vrc_horizontal_split`
-
-By default, the output buffer is displayed to the right of the rest buffer
-(vertical split). If this option is set, the output buffer is displayed
-below the rest buffer.
-
-#### `vrc_include_response_header`
-
-This option enables the inclusion of the response header information mode by
-adding the `-i` option to the *curl* command. It's turned on by default. To
-disable
-
-    let g:vrc_include_response_header = 0
-
-If this option is disabled, the option `vrc_response_default_content_type`
-can be set to an appropriate value for the following options to work properly.
-
-    * `vrc_auto_format_response_enabled`
-    * `vrc_auto_format_response_patterns`
-    * `vrc_syntax_highlight_response`
-
-#### `vrc_max_time`
-
-Corresponding to cUrl option `--max-time`. Default: 60 seconds.
-
-#### `vrc_output_buffer_name`
-
-This option sets the name for the output/display buffer. By default, it's set
-to `__REST_response__`. To assign a different name,
-
-    let g:vrc_output_buffer_name = '__NEW_NAME__'
-
-This option is useful in working with multiple VRC buffers where each one has
-its own output display. For this, the option can be set in the buffer scope as
-
-    let b:vrc_output_buffer_name = '__REST_1_OUTPUT__'
-
-#### `vrc_resolve_to_ipv4`
-
-This option forces names to be resolved to IPV4 addresses only by adding the
-'--ipv4' option to the 'curl' command. It's turned off by default. To enable
-
-    let g:vrc_resolve_to_ipv4 = 1
-
-#### `vrc_response_default_content_type`
-
-This option is to set the default content type of the response. It's useful
-when we don't want to include the response header in the output view (setting
-`vrc_include_response_header` to 0) but still want the output to be formatted
-or syntax-highlighted.
-
-    let b:vrc_response_default_content_type = 'application/json'
-
-or
-
-    let g:vrc_response_default_content_type = 'text/xml'
-
-#### `vrc_set_default_mapping`
-
-This option is to enable/disable the trigger key mapping. It's enabled by
-default. To disable the mapping,
-
-    let g:vrc_set_default_mapping = 0
-
-Once the mapping is disabled, the request block can be executed by
-
-    :call VrcQuery()
-
-#### `vrc_show_command`
-
-This option enables the printing of the executed curl command in the output
-pane. It's disabled by default. To enable:
-
-    let g:vrc_show_command = 1
-
-#### `vrc_split_request_body`
-
-Determine if the request body should be processed line by line. Default: 0.
-
-If this option is set, each line of the request body is passed to cURL using
-either `--data` or `--data-urlencode` depending on the verb.
-
-If the verb is `GET` and the option `vrc_allow_get_request_body` is enabled,
-this option doesn't take effect; the request body is always sent as a whole
-using `--data`.
-
-#### `vrc_ssl_secure`
-
-This option tells cURL to check or not check for the SSL certificates. It's
-turned off by default. To enable,
-
-    let g:vrc_ssl_secure = 1
-
-#### `vrc_syntax_highlight_response`
-
-This option enables the syntax highlighting of the response body according to
-the Content-Type. It's enabled by default. To disable:
-
-    let g:vrc_syntax_highlight_response = 0
-
-If `vrc_include_response_header` is disabled, this option depends on the
-option `vrc_response_default_content_type`.
-
-#### `vrc_trigger`
-
-This option defines the trigger key. It's `<C-j>` by default. To remap the key,
-
-    let g:vrc_trigger = '<C-k>'
+https://github.com/diepm/vim-rest-console/blob/master/doc/vim-rest-console.txt
 
 ### 7. Tips 'n Tricks
 
 #### 7.1 POST Data in Bulk
 
-Since v2.0, VRC supports POSTing data in bulk using an external data file.
-It's helpful for such APIs as ElasticSearch's Bulk API.
+Since v3.0, VRC supports POSTing data in bulk using in-line data or an
+external data file. It's helpful for such APIs as Elasticsearch's Bulk API.
+
+To use in-line data, first enable the Elasticsearch support flag.
+
+    let g:vrc_elasticsearch_support = 1
+
+The request would look like this.
+
+    http://localhost:9200
+    POST /testindex/_bulk
+    { "index": { "_index": "test", "_type": "product" } }
+    { "sku": "SKU1", "name": "Product name 1" }
+    { "index": { "_index": "test", "_type": "product" } }
+    { "sku": "SKU2", "name": "Product name 2" }
+
+Using external data files doesn't need the support flag.
 
     http://localhost:9200
     POST /testindex/_bulk
@@ -542,9 +369,11 @@ Thanks to the contributors (in alphabetical order of GitHub account)
     @iamFIREcracker
     @jojoyuji
     @korin
+    @minhajuddin
     @mjakl
     @nathanaelkane
     @p1otr
+    @rawaludin
     @rlisowski
     @sethtrain
     @shanesmith
@@ -553,6 +382,20 @@ Thanks to the contributors (in alphabetical order of GitHub account)
     @torbjornvatn
 
 ### 9. Changelog
+
+#### 3.0.0 (2017-05-25)
+
+* Support raw cUrl options.
+* Support in-line data for `_bulk` request of ElasticSearch.
+* Deprecate the following VRC options in favor of cUrl options:
+  - `vrc_connect_timeout` for `--connect-timeout`
+  - `vrc_cookie_jar` for `-b` and `-c`
+  - `vrc_follow_redirects` for `-L`
+  - `vrc_include_response_header` for `-i`
+  - `vrc_max_time` for `--max-time`
+  - `vrc_resolve_to_ipv4` for `--ipv4`
+  - `vrc_ssl_secure` for `-k`
+* Source code reformatted and refactored.
 
 #### 2.6.0 (2017-01-30)
 
