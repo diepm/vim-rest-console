@@ -16,7 +16,7 @@ function! vrc#opt#GetDefaultCurlOpts()
     echoerr 'Option vrc_curl_opts should be a dictionary.'
     return {}
   endif
-  return opts
+  return copy(opts)
 endfunction
 
 """
