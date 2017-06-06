@@ -409,8 +409,9 @@ function! s:GetCurlCommand(request)
     let curlOpts['-v'] = ''
   endif
 
-  let secureSsl = s:GetOpt('vrc_ssl_secure', 0)
-  if a:request.host =~? '\v^\s*HTTPS://' && !secureSsl && !has_key(curlOpts, '-k')
+  " Consider to add -k only if vrc_ssl_secure is configured (secureSsl > -1).
+  let secureSsl = s:GetOpt('vrc_ssl_secure', -1)
+  if a:request.host =~? '\v^\s*HTTPS://' && secureSsl == 0 && !has_key(curlOpts, '-k')
     let curlOpts['-k'] = ''
   endif
 
