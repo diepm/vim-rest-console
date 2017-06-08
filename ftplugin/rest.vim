@@ -7,7 +7,7 @@ let s:vrc_auto_format_response_patterns = {
 
 let s:vrc_glob_delim      = '\v^--\s*$'
 let s:vrc_comment_delim   = '\c\v^\s*(#|//)'
-let s:vrc_block_delimiter = '\c\v^\s*HTTPS?://|^--'
+let s:vrc_block_delimiter = '\c\v^\s*HTTPS?://|^--\s*$'
 
 let s:deprecatedMessages = []
 let s:deprecatedCurlOpts = {
@@ -400,7 +400,7 @@ function! s:GetCurlCommand(request)
   call extend(curlOpts, get(a:request, 'curlOpts', {}))
 
   let vrcIncludeHeader = s:GetOpt('vrc_include_response_header', 0)
-  if vrcIncludeHeader && !has_key(curlOpts, '-i')
+  if vrcIncludeHeader && !vrc#opt#DictHasKeys(curlOpts, ['-i', '--include'])
     let curlOpts['-i'] = ''
   endif
 
@@ -720,7 +720,7 @@ function! s:RunQuery(start, end)
     \ s:GetOpt('vrc_output_buffer_name', '__REST_response__'),
     \ outputInfo,
     \ {
-      \ 'hasResponseHeader': has_key(curlOpts, '-i')
+      \ 'hasResponseHeader': vrc#opt#DictHasKeys(curlOpts, ['-i', '--include'])
     \ }
   \)
 endfunction

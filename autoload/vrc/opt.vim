@@ -44,3 +44,19 @@ function! vrc#opt#DictToCurlArgs(dictOpts)
   endfor
   return opts
 endfunction
+
+"""
+" Check if a dict has one of the given keys.
+"
+" @param  dict     a:dictOpts
+" @param  string[] a:keys
+" @return boolean
+"
+function! vrc#opt#DictHasKeys(dictOpts, keys)
+  for kk in a:keys
+    if has_key(a:dictOpts, kk)
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
