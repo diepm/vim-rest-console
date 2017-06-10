@@ -659,6 +659,10 @@ Thanks to the contributors (in alphabetical order of GitHub account)
                                                                  *VrcChangelog*
 9. Changelog~
 
+3.0.1 (2017-06-09)
+  * Fix bug `-k` auto included.
+  * Fix response content syntax-highlighting/formatting detection.
+
 3.0.0 (2017-05-25)
   * Support raw cUrl options.
   * Support in-line data for `_bulk` request of Elasticsearch.
