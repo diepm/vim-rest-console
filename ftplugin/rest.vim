@@ -462,7 +462,7 @@ function! s:GetCurlCommand(request)
 
   """ Convert cUrl options to command line arguments.
   let curlArgs = vrc#opt#DictToCurlArgs(curlOpts)
-  call map(curlArgs, function('s:EscapeCurlOpt'))
+  call map(curlArgs, 's:EscapeCurlOpt(v:val)')
 
   """ Add http verb.
   let httpVerb = a:request.httpVerb
@@ -481,10 +481,9 @@ endfunction
 """
 " Helper function to shell-escape cUrl options.
 "
-" @param string a:key
 " @param string a:val
 "
-function! s:EscapeCurlOpt(key, val)
+function! s:EscapeCurlOpt(val)
   return a:val !~ '\v^-' ? shellescape(a:val) : a:val
 endfunction
 
