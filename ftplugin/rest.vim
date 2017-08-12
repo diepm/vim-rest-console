@@ -535,7 +535,7 @@ function! s:GetCurlDataArgs(request)
 
     """ If ElasticSearch support is on and it's a _bulk request.
     let elasticSupport = s:GetOpt('vrc_elasticsearch_support', 0)
-    if elasticSupport && match(a:request.requestPath, '/_bulk') > -1
+    if elasticSupport && match(a:request.requestPath, '/_bulk\|/_msearch') > -1
       " shellescape also escapes \n (<NL>) to \\n, need to replace back.
       return '--data ' .
            \ substitute(
