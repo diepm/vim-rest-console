@@ -61,23 +61,29 @@ localhost. The pipe (`|`) indicates the current position of the cursor.
 * From the command line, run a new Vim instance.
 * Set the buffer `filetype` to `rest` by
 
-    :set ft=rest
+  ```
+  :set ft=rest
+  ```
 
 * Type in
 
-    http://localhost:9200
-    GET /_cat/nodes?v|
+  ```
+  http://localhost:9200
+  GET /_cat/nodes?v|
+  ```
 
 * Hit the trigger key (`<C-j>` by default).
 * A new vertically split buffer will be shown to display the output.
 * Change the request block to (or add another one)
 
-    http://localhost:9200
-    POST /testindex/testtype
-    {
-      "key": "new key",
-      "value": "new value"|
-    }
+  ```
+  http://localhost:9200
+  POST /testindex/testtype
+  {
+    "key": "new key",
+    "value": "new value"|
+  }
+  ```
 
 * Hit the trigger key with the cursor placed anywhere within this request block.
 * The display buffer will be updated with the new response.
@@ -88,18 +94,24 @@ This example continues the previous one.
 
 * Open a new VRC buffer in a new tab
 
-    :tabe NewVrc.rest
+  ```
+  :tabe NewVrc.rest
+  ```
 
 * Since the new buffer has the extension `rest`, the VRC plug-in is active for
   this one.
 * Set `b:vrc_output_buffer_name` of this buffer to `__NEW_VRC__`
 
-    :let b:vrc_output_buffer_name = '__NEW_VRC__'
+  ```
+  :let b:vrc_output_buffer_name = '__NEW_VRC__'
+  ```
 
 * Type in a request block such as
 
-    http://localhost:9200
-    GET /testindex/_search?pretty|
+  ```
+  http://localhost:9200
+  GET /testindex/_search?pretty|
+  ```
 
 * Hit the trigger key.
 * A new display buffer will be created showing the response.
