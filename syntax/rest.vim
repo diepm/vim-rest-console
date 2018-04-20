@@ -77,7 +77,7 @@ highlight link restHost Label
 syntax match restKeyword '\c\v^\s*(GET|POST|PUT|DELETE|HEAD|PATCH|OPTIONS|TRACE)\s'
 highlight link restKeyword Macro
 
-syntax match restComment '\v^\s*(#|//).*$'
+syntax match restComment '\v\s*(#|//).*$'
 highlight link restComment Comment
 
 
