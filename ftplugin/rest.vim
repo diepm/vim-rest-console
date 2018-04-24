@@ -826,6 +826,7 @@ function! VrcGetRequestPath()
       echom request.msg
   endif
 endfunction
+nnoremap <buffer> <silent> gx :silent! call system("open " .VrcGetRequestPath())<cr>
 
 """
 " Run a request block that encloses the cursor.
