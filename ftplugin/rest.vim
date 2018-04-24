@@ -1,3 +1,8 @@
+if exists('b:loaded_rest_vim')
+    finish
+endif
+let b:loaded_rest_vim = 1
+
 setlocal commentstring=#%s
 
 let s:vrc_auto_format_response_patterns = {
@@ -8,6 +13,7 @@ let s:vrc_auto_format_response_patterns = {
 let s:vrc_glob_delim      = '\v^--\s*$'
 let s:vrc_comment_delim   = '\c\v^\s*(#|//)'
 let s:vrc_block_delimiter = '\c\v^\s*HTTPS?://|^--\s*$'
+let s:verb_pattern = '\c\v^(GET|POST|PUT|DELETE|HEAD|PATCH|OPTIONS|TRACE)\s+'
 
 let s:deprecatedMessages = []
 let s:deprecatedCurlOpts = {
@@ -565,6 +571,19 @@ function! s:GetCurlDataArgs(request)
   return '--data-urlencode ' . shellescape(join(dataLines, ''))
 endfunction
 
+let g:vrc_header_buffer_name = "__REST_header__"
+
+function! s:CreateHeaderBuf(headerStr)
+    execute(":e " . g:vrc_header_buffer_name)
+    setl buftype=nofile
+    execute(":%d")
+    call setline(1, split(a:headerStr, '\v\n'))
+    let responseBufName = s:GetOpt('vrc_output_buffer_name', '__REST_response__')
+    execute(printf('nnoremap <silent> <buffer> <c-n> :execute("b %s")<cr>', responseBufName))
+    execute("b " . responseBufName)
+    nnoremap <silent> <buffer> <c-n> :execute("b " . g:vrc_header_buffer_name)<cr>
+endfunction
+
 """
 " Display output in the given buffer name.
 "
@@ -583,7 +602,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
 
   """ Setup view.
   let origWin = winnr()
-  let outputWin = bufwinnr(bufnr(a:tmpBufName))
+  let outputWin = max([bufwinnr(bufnr(a:tmpBufName)), bufwinnr(bufnr(g:vrc_header_buffer_name))])
   if outputWin == -1
     let cmdSplit = 'vsplit'
     if s:GetOpt('vrc_horizontal_split', 0)
@@ -596,6 +615,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
   else
     """ View already shown, switch to it.
     execute outputWin . 'wincmd w'
+    execute("b " . bufnr(a:tmpBufName))
   endif
 
   """ Display output in view.
@@ -607,8 +627,8 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
   """ Display commands in quickfix window if any.
   if (!empty(a:outputInfo['commands']))
     execute 'cgetexpr' string(a:outputInfo['commands'])
-    copen
-    execute outputWin 'wincmd w'
+    " copen
+    " execute outputWin 'wincmd w'
   endif
 
   """ Detect content-type based on the returned header.
@@ -670,9 +690,24 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
     endif
   endif
 
+  silent execute(":g/Content-Type:/normal dap")
+  silent call s:CreateHeaderBuf(@")
+
+  if getline(1) =~ '^$' | 1d | endif
   """ Finalize view.
-  setlocal nomodifiable
+  " setlocal nomodifiable
+  execute(printf("setl filetype=%s", fileType))
   execute origWin . 'wincmd w'
+endfunction
+
+" Return: First paragraph line
+function! s:GetFirstVerb(start)
+    let lineNum = search('^$', 'bnW', a:start)
+    if ! lineNum
+        return a:start
+    else
+        return lineNum + 1
+    endif
 endfunction
 
 """
@@ -690,10 +725,12 @@ function! s:RunQuery(start, end)
 
   " The `while loop` is to support multiple
   " requests using consecutive verbs.
-  let resumeFrom = a:start
+
+  let resumeFrom = s:GetFirstVerb(a:start)
+
   let shouldShowCommand = s:GetOpt('vrc_show_command', 0)
   let shouldDebug = s:GetOpt('vrc_debug', 0)
-  while resumeFrom < a:end
+  while resumeFrom <= a:end
     let request = s:ParseRequest(a:start, resumeFrom, a:end, globSection)
     if !request.success
       echom request.msg
@@ -712,6 +749,11 @@ function! s:RunQuery(start, end)
     if shouldShowCommand
       call add(outputInfo['commands'], curlCmd)
     endif
+
+    if !s:DoContinue(resumeFrom, request.resumeFrom)
+        break
+    endif
+
     let resumeFrom = request.resumeFrom
   endwhile
 
@@ -722,6 +764,15 @@ function! s:RunQuery(start, end)
       \ 'hasResponseHeader': vrc#opt#DictHasKeys(curlOpts, ['-i', '--include'])
     \ }
   \)
+endfunction
+
+" Return: whether run continuous queries
+function! s:DoContinue(curQueryLine, nextQueryLine)
+  let curPos = getpos('.')
+  call cursor(a:curQueryLine, 1)
+  let lineNum = search('^$', 'nW', a:nextQueryLine)
+  call cursor(curPos[1:])
+  return ! lineNum
 endfunction
 
 """
@@ -737,6 +788,42 @@ function! s:RestoreWinLine(prevLine)
     exec "normal! " . offset . "\<C-e>"
   else
     exec "normal! " . -offset . "\<C-y>"
+  endif
+endfunction
+
+" Return first verb before current line within the block
+function! s:VrcGetCursorVerbLine(blockStart)
+    if getline('.') =~ s:verb_pattern
+        return line('.')
+    endif
+
+    return search(s:verb_pattern, 'bnW', a:blockStart)
+endfunction
+
+function! VrcGetRequestPath()
+  let curWinLine = winline()
+  let curLine = line('.')
+
+  let curPos = getpos('.')
+  if curPos[1] <= s:LineNumGlobSectionDelim()
+    echom 'Cannot execute global section'
+    return
+  endif
+
+  """ Determine the REST request block to process.
+  let [blockStart, blockEnd] = s:LineNumsRequestBlock()
+  if !blockStart
+    call s:RestoreWinLine(curWinLine)
+    echom 'Missing host/block start'
+    return
+  endif
+
+  let request = s:ParseRequest(blockStart, s:VrcGetCursorVerbLine(blockStart), blockEnd, s:ParseGlobSection())
+  call s:RestoreWinLine(curWinLine)
+  if request.success
+      return request.host . request.requestPath
+  else
+      echom request.msg
   endif
 endfunction
 
