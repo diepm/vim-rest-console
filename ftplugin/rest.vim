@@ -28,7 +28,7 @@ let s:deprecatedCurlOpts = {
 " @return string
 "
 function! s:StrTrim(txt)
-  return substitute(a:txt, '\v^\s*([^[:space:]].*[^[:space:]])\s*$', '\1', 'g')
+  return substitute(a:txt, '\v^\s*(\S(.*\S)*)\s*$', '\1', 'g')
 endfunction
 
 """
