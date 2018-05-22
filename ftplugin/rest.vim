@@ -565,6 +565,19 @@ function! s:GetCurlDataArgs(request)
   return '--data-urlencode ' . shellescape(join(dataLines, ''))
 endfunction
 
+let g:vrc_header_buffer_name = "__REST_header__"
+
+function! s:CreateHeaderBuf(headerStr)
+    execute(":e " . g:vrc_header_buffer_name)
+    setl buftype=nofile
+    execute(":%d")
+    call setline(1, split(a:headerStr, '\v\n'))
+    let responseBufName = s:GetOpt('vrc_output_buffer_name', '__REST_response__')
+    execute(printf('nnoremap <silent> <buffer> <c-n> :execute("b %s")<cr>', responseBufName))
+    execute("b " . responseBufName)
+    nnoremap <silent> <buffer> <c-n> :execute("b " . g:vrc_header_buffer_name)<cr>
+endfunction
+
 """
 " Display output in the given buffer name.
 "
@@ -659,6 +672,11 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
       endif
     endif
 
+    if exists("g:vrc_enable_header_buffer") && g:vrc_enable_header_buffer
+        silent execute(":g/Content-Type:/normal dap")
+        silent call s:CreateHeaderBuf(@")
+    endif
+
     """ Syntax-highlight response.
     if syntaxHighlightResponse
       syntax clear
@@ -669,6 +687,9 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
       endtry
     endif
   endif
+
+  " Remove the first empty line
+  if getline(1) =~ '^$' | 1d | endif
 
   """ Finalize view.
   setlocal nomodifiable
