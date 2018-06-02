@@ -517,6 +517,12 @@ function! s:GetCurlDataArgs(request)
   let httpVerb = a:request.httpVerb
   let dataLines = a:request.dataBody
 
+  """ Call body preprocessor if set.
+  let preproc = s:GetOpt('vrc_body_preprocessor', '')
+  if preproc != ''
+      let dataLines = systemlist(preproc, join(a:request.dataBody, "\r"))
+  endif
+
   """ These verbs should have request body passed as POST params.
   if httpVerb ==? 'POST'
     \ || httpVerb ==? 'PUT'
