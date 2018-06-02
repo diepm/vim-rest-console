@@ -464,6 +464,18 @@ If set, VRC will try to transform all unicode `\uXXXX` instances in the
 response to the corresponding symbols. It's turned of by default.
 
 ------------------------------------------------------------------------------
+*vrc_body_preprocessor*
+
+An external command to run using the request body as input, the output of
+which will then be used as the body for the request. Default is an empty
+string, which will not run any preprocessing.
+
+Example using yaml2json to convert from yaml (easier to type) to JSON,
+and then piping into jq minify that:
+>
+    let g:vrc_body_preprocessor = 'yaml2json | jq -c .'
+<
+------------------------------------------------------------------------------
 *vrc_curl_opts*
 
 A dictionary that contains the default cUrl options. Default: not exist.
