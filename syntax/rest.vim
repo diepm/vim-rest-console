@@ -22,14 +22,14 @@ let s:ns_char_without_c_indicator = substitute(s:ns_char, '\v\C[\zs', '\=s:c_ind
 
 let s:_collection = '[^\@!\(\%(\\\.\|\[^\\\]]\)\+\)]'
 let s:_neg_collection = '[^\(\%(\\\.\|\[^\\\]]\)\+\)]'
-function s:SimplifyToAssumeAllPrintable(p)
+function! s:SimplifyToAssumeAllPrintable(p)
     return substitute(a:p, '\V\C\\%('.s:_collection.'\\@!\\p\\)', '[^\1]', '')
 endfunction
 let s:ns_char = s:SimplifyToAssumeAllPrintable(s:ns_char)
 let s:ns_char_without_c_indicator = s:SimplifyToAssumeAllPrintable(s:ns_char_without_c_indicator)
 let s:c_ns_anchor_char = s:SimplifyToAssumeAllPrintable(s:c_ns_anchor_char)
 
-function s:SimplifyAdjacentCollections(p)
+function! s:SimplifyAdjacentCollections(p)
     return substitute(a:p, '\V\C'.s:_collection.'\\|'.s:_collection, '[\1\2]', 'g')
 endfunction
 let s:ns_uri_char = s:SimplifyAdjacentCollections(s:ns_uri_char)
