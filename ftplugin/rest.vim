@@ -190,7 +190,7 @@ function! s:ParseHeaders(start, end)
   let hasContentType = 0
   for line in lineBuf
     let line = s:StrTrim(line)
-    if line ==? '' || line =~? s:vrc_comment_delim
+    if line ==? '' || line =~? s:vrc_comment_delim || line =~? '\v^--?\w+'
       continue
     endif
     let sepIdx = stridx(line, ':')
