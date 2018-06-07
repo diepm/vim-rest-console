@@ -517,6 +517,8 @@ function! s:GetCurlDataArgs(request)
   let httpVerb = a:request.httpVerb
   let dataLines = a:request.dataBody
 
+  let preproc = s:GetOpt('vrc_body_preprocessor', '')
+
   """ These verbs should have request body passed as POST params.
   if httpVerb ==? 'POST'
     \ || httpVerb ==? 'PUT'
@@ -525,6 +527,11 @@ function! s:GetCurlDataArgs(request)
     """ If data is loaded from file.
     if stridx(get(dataLines, 0, ''), '@') == 0
       return '--data-binary ' . shellescape(dataLines[0])
+    endif
+
+    """ Call body preprocessor if set.
+    if preproc != ''
+      let dataLines = systemlist(preproc, join(dataLines, "\r"))
     endif
 
     """ If request body is split line by line.
@@ -552,6 +559,10 @@ function! s:GetCurlDataArgs(request)
 
   """ If verb is GET and GET request body is allowed.
   if httpVerb ==? 'GET' && s:GetOpt('vrc_allow_get_request_body', 0)
+    """ Call body preprocessor if set.
+    if preproc != ''
+      let dataLines = systemlist(preproc, join(dataLines, "\r"))
+    endif
     return '--data ' . shellescape(join(dataLines, ''))
   endif
 
