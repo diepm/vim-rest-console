@@ -272,14 +272,17 @@ headers. Local headers are merged with and overwrite global headers.
 #### 5.3 Global Variable Declaration
 
 VRC now supports variable declarations in the global scope. These variables
-then can be used in the query paths. Notice: values are not url-encoded.
+then can be used in the query paths, headers, and the body. Notice: values
+are not url-encoded.
 
     # Global scope.
     http://host
 
     // Variable declarations (value passed as is).
+    foobar = LoremIpsum
     city = Some%20City
     zip = 12345
+    population = 42
     --
     # End global scope.
 
@@ -288,6 +291,11 @@ then can be used in the query paths. Notice: values are not url-encoded.
 
     --
     GET /city/:city/zip/:zip
+
+    --
+    custom-header :foobar
+    POST /city/:city
+    { "population": :population }
 
 #### 5.4 Line-by-line Request Body
 
