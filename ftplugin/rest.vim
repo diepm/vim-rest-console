@@ -362,10 +362,12 @@ function! s:ParseRequest(start, resumeFrom, end, globSection)
   let [httpVerb; queryPathList] = split(restQuery)
   let dataBody = getline(lineNumVerb + 1, lineNumNextVerb - 1)
 
-  """ Search and replace values in queryPath
+  """ Search and replace values in queryPath, dataBody, and headers
   let queryPath = join(queryPathList, '')
   for key in keys(vals)
     let queryPath = substitute(queryPath, ":" . key, vals[key], "")
+    call map(dataBody, 'substitute(v:val, ":" . key, vals[key], "")')
+    call map(headers,  'substitute(v:val, ":" . key, vals[key], "")')
   endfor
 
   """ Filter out comment and blank lines.
