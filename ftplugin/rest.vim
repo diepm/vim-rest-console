@@ -603,6 +603,10 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
       let cmdSplit = 'split'
     endif
 
+    if s:GetOpt('vrc_keepalt', 0)
+      let cmdSplit = 'keepalt ' . cmdSplit
+    endif
+
     """ Create view if not loadded or hidden.
     execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
     setlocal buftype=nofile
