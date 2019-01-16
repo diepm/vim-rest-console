@@ -367,6 +367,13 @@ Using external data files doesn't need the support flag.
     POST /testindex/_bulk
     @data.sample.json
 
+You can also PUT contents of a file using the same syntax. This is
+equivalent to passing --data-binary flag to cURL.
+
+    http://localhost:9200
+    PUT /testindex/_bulk
+    @data.sample.json
+
 #### 7.2 Syntax Highlighting
 
 Though VRC supports output syntax highlighting, it's based on the response
