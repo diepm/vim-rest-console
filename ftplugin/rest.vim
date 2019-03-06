@@ -238,7 +238,7 @@ function! s:ParseVals(start, end)
     let sepIdx = stridx(line, '=')
     if sepIdx > -1
       let key = s:StrTrim(line[0:sepIdx - 1])
-      let vals[key] = s:StrTrim(line[sepIdx + 1:])
+      let vals[key] = expand(s:StrTrim(line[sepIdx + 1:]))
     endif
   endfor
   return vals
