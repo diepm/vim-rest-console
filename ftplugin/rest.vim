@@ -238,7 +238,12 @@ function! s:ParseVals(start, end)
     let sepIdx = stridx(line, '=')
     if sepIdx > -1
       let key = s:StrTrim(line[0:sepIdx - 1])
-      let vals[key] = s:StrTrim(line[sepIdx + 1:])
+      let val = s:StrTrim(line[sepIdx + 1:])
+      if val[:0] is# "$"
+        let vals[key] = expand(val)
+      else
+        let vals[key] = val
+      endif
     endif
   endfor
   return vals
