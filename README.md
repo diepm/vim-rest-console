@@ -273,7 +273,8 @@ headers. Local headers are merged with and overwrite global headers.
 
 VRC now supports variable declarations in the global scope. These variables
 then can be used in the query paths, headers, and the body. Notice: values
-are not url-encoded.
+are not url-encoded.  Variables can contain static text, or reference an
+environment variable:
 
     # Global scope.
     http://host
@@ -283,6 +284,7 @@ are not url-encoded.
     city = Some%20City
     zip = 12345
     population = 42
+    restpassword = $SECRET_ENV_VAR
     --
     # End global scope.
 
