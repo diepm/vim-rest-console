@@ -640,10 +640,12 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
   call setline('.', split(substitute(output, '[[:return:]]', '', 'g'), '\v\n'))
 
   """ Display commands in quickfix window if any.
-  if (!empty(a:outputInfo['commands']))
-    execute 'cgetexpr' string(a:outputInfo['commands'])
-    copen
-    execute outputWin 'wincmd w'
+  if s:GetOpt('vrc_show_command_in_quickfix', 1)
+    if (!empty(a:outputInfo['commands']))
+      execute 'cgetexpr' string(a:outputInfo['commands'])
+      copen
+      execute outputWin 'wincmd w'
+    endif
   endif
 
   """ Detect content-type based on the returned header.
@@ -702,6 +704,15 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
         execute "syntax region body start=/^$/ end=/\%$/ contains=@vrc_" . fileType
       catch
       endtry
+    endif
+  endif
+
+  """ Display commands in result buffer if any.
+  if s:GetOpt('vrc_show_command_in_result_buffer', 0)
+    if (!empty(a:outputInfo['commands']))
+      let prefixedList = map(copy(a:outputInfo['commands']), '"REQUEST: " . v:val . "\t"') 
+      call append(0, prefixedList)
+      call append(1, '')
     endif
   endif
 
