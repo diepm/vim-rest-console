@@ -39,6 +39,8 @@ CONTENTS                                                         *VrcContents*
       vrc_response_default_content_type.. |vrc_response_default_content_type|
       vrc_set_default_mapping...................... |vrc_set_default_mapping|
       vrc_show_command.....................................|vrc_show_command|
+      vrc_show_command_in_quickfix.............|vrc_show_command_in_quickfix|
+      vrc_show_command_in_result_buffer...|vrc_show_command_in_result_buffer|
       vrc_split_request_body........................ |vrc_split_request_body|
       vrc_syntax_highlight_response...........|vrc_syntax_highlight_response|
       vrc_trigger.............................................. |vrc_trigger|
@@ -575,6 +577,29 @@ pane. It's disabled by default. To enable:
 >
     let g:vrc_show_command = 1
 <
+------------------------------------------------------------------------------
+*vrc_show_command_in_quickfix*
+
+This option disables the printing of the executed curl command in the quickfix 
+list. It's enabled by default. To disable:
+>
+    let g:vrc_show_command_in_quickfix = 0
+
+------------------------------------------------------------------------------
+*vrc_curl_timeout*
+
+Kill curl after this timeout - default 1m.
+See man timeout for details.
+>
+    let g:vrc_curl_timeout = '5s'
+
+------------------------------------------------------------------------------
+*vrc_show_command_in_result_buffer*
+
+This option enables the printing of the executed curl command in the output
+pane. It's disabled by default. To enable:
+>
+    let g:vrc_show_command_in_result_buffer = 1
 ------------------------------------------------------------------------------
 *vrc_split_request_body*
 
