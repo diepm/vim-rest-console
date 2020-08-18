@@ -635,7 +635,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
 
   """ Display output in view.
   setlocal modifiable
-  silent! normal! ggdG
+  silent! normal! gg"_dG
   let output = join(a:outputInfo['outputChunks'], "\n\n")
   call setline('.', split(substitute(output, '[[:return:]]', '', 'g'), '\v\n'))
 
