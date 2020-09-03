@@ -686,6 +686,8 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
               \ 'g'
             \)
           endif
+          " Character u2001
+          call append('$', " ")
           call append('$', split(formattedBody, '\v\n'))
         elseif s:GetOpt('vrc_debug', 0)
           echom "VRC: auto-format error: " . v:shell_error
@@ -699,7 +701,8 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
       syntax clear
       try
         execute "syntax include @vrc_" . fileType . " syntax/" . fileType . ".vim"
-        execute "syntax region body start=/^$/ end=/\%$/ contains=@vrc_" . fileType
+        " Character u2001
+        execute "syntax region body start=/ / end=/\%$/ contains=@vrc_" . fileType
       catch
       endtry
     endif
@@ -707,6 +710,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
 
   """ Finalize view.
   setlocal nomodifiable
+  execute 'syntax sync fromstart'
   execute origWin . 'wincmd w'
 endfunction
 
