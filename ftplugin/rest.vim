@@ -186,6 +186,33 @@ function! s:ParseVerbQuery(start, end)
 endfunction
 
 """
+" Parse pipe command
+"
+" @param  int  a:start
+" @param  int  a:end
+" @return string 
+"
+function! s:ParsePipe(start, end)
+  let pipe = ''
+  if (a:end < a:start)
+    return ''
+  endif
+
+  let lineBuf = getline(a:start, a:end)
+  for line in lineBuf
+    let line = s:StrTrim(line)
+    if line ==? '' || line =~? s:vrc_comment_delim || line =~? '\v^--?\w+'
+      continue
+    endif
+
+    if line =~ '^|'
+      let pipe = line
+    endif
+  endfor
+  return pipe
+endfunction
+
+"""
 " Parse header options between the given line numbers (inclusive end).
 "
 " @param  int  a:start
@@ -260,6 +287,7 @@ function! s:ParseGlobSection()
     \ 'headers': {},
     \ 'curlOpts': {},
     \ 'vals': {},
+    \ 'pipe': '',
   \}
 
   """ Search for the line of the global section delimiter.
@@ -280,11 +308,15 @@ function! s:ParseGlobSection()
   """ Parse global vals.
   let vals = s:ParseVals(hostLine + 1, lastLine - 1)
 
+  """ parse pipe command
+  let pipe = s:ParsePipe(hostLine + 1, lastLine - 1)
+
   let globSection = {
     \ 'host': host,
     \ 'headers': headers,
     \ 'curlOpts': curlOpts,
     \ 'vals': vals,
+    \ 'pipe': pipe,
   \}
   return globSection
 endfunction
@@ -331,6 +363,7 @@ endfunction
 "                'httpVerb':    string,
 "                'requestPath': string,
 "                'dataBody':    string,
+"                'pipe':    string,
 "              }
 "
 function! s:ParseRequest(start, resumeFrom, end, globSection)
@@ -374,6 +407,12 @@ function! s:ParseRequest(start, resumeFrom, end, globSection)
   let curlOpts = get(a:globSection, 'curlOpts', {})
   call extend(curlOpts, localCurlOpts)
 
+  """ Parse local pipe and use global pipe if empty
+  let pipe = s:ParsePipe(lineNumHost + 1, lineNumVerb - 1)
+  if pipe == ""
+    let pipe = get(a:globSection, 'pipe', '')
+  endif
+
   let vals = get(a:globSection, 'vals', {})
 
   """ Parse http verb, query path, and data body.
@@ -402,7 +441,8 @@ function! s:ParseRequest(start, resumeFrom, end, globSection)
     \ 'curlOpts': curlOpts,
     \ 'httpVerb': httpVerb,
     \ 'requestPath': queryPath,
-    \ 'dataBody': dataBody
+    \ 'dataBody': dataBody,
+    \ 'pipe': pipe
   \}
 endfunction
 
@@ -743,8 +783,10 @@ function! s:RunQuery(start, end)
     silent !clear
     redraw!
 
-    call add(outputInfo['outputChunks'], system(curlCmd))
+    call add(outputInfo['outputChunks'], system(curlCmd . request.pipe))
+    " call add(outputInfo['outputChunks'], system(curlCmd))
     if shouldShowCommand
+      " call add(outputInfo['commands'], system(curlCmd . '| jq .'))
       call add(outputInfo['commands'], curlCmd)
     endif
     let resumeFrom = request.resumeFrom
