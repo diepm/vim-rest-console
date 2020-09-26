@@ -784,9 +784,7 @@ function! s:RunQuery(start, end)
     redraw!
 
     call add(outputInfo['outputChunks'], system(curlCmd . request.pipe))
-    " call add(outputInfo['outputChunks'], system(curlCmd))
     if shouldShowCommand
-      " call add(outputInfo['commands'], system(curlCmd . '| jq .'))
       call add(outputInfo['commands'], curlCmd)
     endif
     let resumeFrom = request.resumeFrom
