@@ -194,13 +194,12 @@ endfunction
 "
 function! s:ParseHeaders(start, end)
   let contentTypeOpt = s:GetOpt('vrc_header_content_type', 'application/json')
-  let headers = {'Content-Type': contentTypeOpt}
+  let headers = {'content-type': contentTypeOpt}
   if (a:end < a:start)
     return headers
   endif
 
   let lineBuf = getline(a:start, a:end)
-  let hasContentType = 0
   for line in lineBuf
     let line = s:StrTrim(line)
     if line ==? '' || line =~? s:vrc_comment_delim || line =~? '\v^--?\w+'
@@ -208,7 +207,7 @@ function! s:ParseHeaders(start, end)
     endif
     let sepIdx = stridx(line, ':')
     if sepIdx > -1
-      let key = s:StrTrim(line[0:sepIdx - 1])
+      let key = tolower(s:StrTrim(line[0:sepIdx - 1]))
       let headers[key] = s:StrTrim(line[sepIdx + 1:])
     endif
   endfor
