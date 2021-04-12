@@ -174,7 +174,7 @@ function! s:ParseVerbQuery(start, end)
   let curPos = getpos('.')
   call cursor(a:start, 1)
   let lineNum = search(
-    \ '\c\v^(GET|POST|PUT|DELETE|HEAD|PATCH|OPTIONS|TRACE)\s+',
+    \ '\c\v^(GET|POST|PUT|DELETE|HEAD|PATCH|OPTIONS|TRACE|GQL)\s+',
     \ 'cn',
     \ a:end
   \)
@@ -521,6 +521,8 @@ function! s:GetCurlRequestOpt(httpVerb)
     return '--get'
   elseif a:httpVerb ==? 'HEAD'
     return '--head'
+  elseif a:httpVerb ==? 'GQL'
+    return '-X POST'
   endif
   return '-X ' . a:httpVerb
 endfunction
@@ -577,6 +579,17 @@ function! s:GetCurlDataArgs(request)
     return '--data ' . s:Shellescape(join(dataLines, ''))
   endif
 
+  """ If verb is GQL have request body converted into json format
+  if httpVerb ==? 'GQL'
+    "" Convert " to \" 
+    call map( dataLines, {_, val -> substitute(val, '"' , '\\"', 'g')})
+
+    ""Put Query in JSON format
+    let dataLines = '{ "query": "' . join(dataLines) . '" }'
+
+    return '--data ' . s:Shellescape(dataLines)
+  endif
+
   """ If verb is GET and GET request body is allowed.
   if httpVerb ==? 'GET' && s:GetOpt('vrc_allow_get_request_body', 0)
     """ Call body preprocessor if set.
@@ -614,30 +627,42 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
 
   """ Setup view.
   let origWin = winnr()
-  let outputWin = bufwinnr(bufnr(a:tmpBufName))
-  if outputWin == -1
-    let cmdSplit = 'vsplit'
-    if s:GetOpt('vrc_horizontal_split', 0)
-      let cmdSplit = 'split'
-    endif
-
-    if s:GetOpt('vrc_keepalt', 0)
-      let cmdSplit = 'keepalt ' . cmdSplit
-    endif
-
-    """ Create view if not loadded or hidden.
-    execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
+  "" Open in new buffer
+  if s:GetOpt('vrc_new_buffer', 0)
+    execute 'badd ' . a:tmpBufName
+    execute 'b ' . a:tmpBufName
     setlocal buftype=nofile
   else
-    """ View already shown, switch to it.
-    execute outputWin . 'wincmd w'
+  "" Open in Split Window
+    let outputWin = bufwinnr(bufnr(a:tmpBufName))
+    if outputWin == -1
+      let cmdSplit = 'vsplit'
+      if s:GetOpt('vrc_horizontal_split', 0)
+        let cmdSplit = 'split'
+      endif
+
+      if s:GetOpt('vrc_keepalt', 0)
+        let cmdSplit = 'keepalt ' . cmdSplit
+      endif
+
+      """ Create view if not loadded or hidden.
+      execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
+      setlocal buftype=nofile
+    else
+      """ View already shown, switch to it.
+      execute outputWin . 'wincmd w'
+    endif
   endif
 
   """ Display output in view.
   setlocal modifiable
   silent! normal! ggdG
   let output = join(a:outputInfo['outputChunks'], "\n\n")
-  call setline('.', split(substitute(output, '[[:return:]]', '', 'g'), '\v\n'))
+  if output == ''
+    call setline('.', "VRC: Error Occurred, Host cannot be resolved")
+  else
+    call setline('.', split(substitute(output, '[[:return:]]', '', 'g'), '\v\n'))
+  endif
 
   """ Display commands in quickfix window if any.
   if (!empty(a:outputInfo['commands']))
@@ -698,8 +723,22 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
     if syntaxHighlightResponse
       syntax clear
       try
-        execute "syntax include @vrc_" . fileType . " syntax/" . fileType . ".vim"
-        execute "syntax region body start=/^$/ end=/\%$/ contains=@vrc_" . fileType
+        execute "set ft=" . fileType
+        "" Highlight Headers
+        :syn region vrc_header start=+^\w.*:+ end=+ +
+        :syn region vrc_httpHeader start=+HTTP+ end=+ + nextgroup=vrc_http200,vrc_http300,vrc_http400,vrc_http500
+        :syn match vrc_http200 "2.*$" contained
+        :syn match vrc_http300 "3.*$" contained
+        :syn match vrc_http400 "4.*$" contained
+        :syn match vrc_http500 "5.*$" contained
+        if s:GetOpt('vrc_default_header_highlights', 1)
+          :hi link vrc_httpHeader Type
+          :hi link vrc_http200 String
+          :hi link vrc_http300 Function 
+          :hi link vrc_http400 Number
+          :hi link vrc_http500 Number
+          :hi link vrc_header Type
+        endif
       catch
       endtry
     endif

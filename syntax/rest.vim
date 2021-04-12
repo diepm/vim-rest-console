@@ -227,8 +227,13 @@ highlight link restHost Label
 syntax match restKeyword '\c\v^\s*(GET|POST|PUT|DELETE|HEAD|PATCH|OPTIONS|TRACE)\s'
 highlight link restKeyword Macro
 
-syntax match restComment '\v^\s*(#|//).*$'
 highlight link restComment Comment
+syntax match restComment '\v^\s*(#|//).*$'
 
+syntax match GQLKeyword '\c\v^\s*GQL\s'
+highlight link GQLKeyword Macro
+
+syn include @GraphQLSyntax syntax/graphql.vim
+syntax region GQLQuery start=+GQL+ end=+\n#.*+ keepend contains=@GraphQLSyntax
 
 let b:current_syntax = 'rest'
