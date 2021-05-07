@@ -39,7 +39,7 @@ To install using [pathogen.vim](https://github.com/tpope/vim-pathogen)
 To install using [Vundle](https://github.com/gmarik/Vundle.vim)
 
     " Add this line to .vimrc
-    Plugin 'diepm/vim-rest-console'
+    Plugin 'D3faIt/vim-rest-console'
 
 Other methods should work as well.
 
