@@ -615,23 +615,31 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
 
   """ Setup view.
   let origWin = winnr()
-  let outputWin = bufwinnr(bufnr(a:tmpBufName))
-  if outputWin == -1
-    let cmdSplit = 'vsplit'
-    if s:GetOpt('vrc_horizontal_split', 0)
-      let cmdSplit = 'split'
-    endif
-
-    if s:GetOpt('vrc_keepalt', 0)
-      let cmdSplit = 'keepalt ' . cmdSplit
-    endif
-
-    """ Create view if not loadded or hidden.
-    execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
+  "" Open in new buffer
+  if s:GetOpt('vrc_new_buffer', 0)
+    execute 'badd ' . a:tmpBufName
+    execute 'b ' . a:tmpBufName
     setlocal buftype=nofile
   else
-    """ View already shown, switch to it.
-    execute outputWin . 'wincmd w'
+    "" Open in Split Window
+    let outputWin = bufwinnr(bufnr(a:tmpBufName))
+    if outputWin == -1
+      let cmdSplit = 'vsplit'
+      if s:GetOpt('vrc_horizontal_split', 0)
+        let cmdSplit = 'split'
+      endif
+
+      if s:GetOpt('vrc_keepalt', 0)
+        let cmdSplit = 'keepalt ' . cmdSplit
+      endif
+
+      """ Create view if not loadded or hidden.
+      execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
+      setlocal buftype=nofile
+    else
+      """ View already shown, switch to it.
+      execute outputWin . 'wincmd w'
+    endif
   endif
 
   """ Display output in view.
@@ -644,8 +652,10 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
   if s:GetOpt('vrc_show_command_in_quickfix', 1)
     if (!empty(a:outputInfo['commands']))
       execute 'cgetexpr' string(a:outputInfo['commands'])
-      copen
-      execute outputWin 'wincmd w'
+      if s:GetOpt('vrc_open_quickfix', 0)
+        copen
+        execute outputWin 'wincmd w'
+      endif
     endif
   endif
 
@@ -690,7 +700,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
             \)
           endif
           " Character u2001
-          call append('$', " ")
+          " call append('$', " ")
           call append('$', split(formattedBody, '\v\n'))
         elseif s:GetOpt('vrc_debug', 0)
           echom "VRC: auto-format error: " . v:shell_error
@@ -705,7 +715,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
       try
         execute "syntax include @vrc_" . fileType . " syntax/" . fileType . ".vim"
         " Character u2001
-        execute "syntax region body start=/ / end=/\%$/ contains=@vrc_" . fileType
+        " execute "syntax region body start=/ / end=/\%$/ contains=@vrc_" . fileType
       catch
       endtry
     endif
@@ -721,9 +731,12 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
   endif
 
   """ Finalize view.
-  setlocal nomodifiable
-  execute 'syntax sync fromstart'
-  execute origWin . 'wincmd w'
+  execute '1delete _'
+  " WTF:
+  call timer_start(10, { tid -> execute('normal "_ddu')})
+  call timer_start(20, { tid -> execute('normal GzxggzMzr')})
+  " call timer_start(50, { tid -> execute('setlocal nomodifiable')})
+  call timer_start(100, { tid -> execute(origWin . 'wincmd w')})
 endfunction
 
 """
