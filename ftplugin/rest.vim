@@ -190,11 +190,18 @@ endfunction
 "
 " @param  int  a:start
 " @param  int  a:end
+" @param  bool a:hasBody
 " @return dict {'header1': 'value1', 'header2': 'value2'}
 "
-function! s:ParseHeaders(start, end)
+function! s:ParseHeaders(start, end, hasBody)
   let contentTypeOpt = s:GetOpt('vrc_header_content_type', 'application/json')
-  let headers = {'Content-Type': contentTypeOpt}
+
+  let headers = {}
+
+  if a:hasBody
+    let headers = {'Content-Type': contentTypeOpt}
+  endif
+
   if (a:end < a:start)
     return headers
   endif
@@ -272,7 +279,7 @@ function! s:ParseGlobSection()
   let [hostLine, host] = s:ParseHost(1, lastLine - 1)
 
   """ Parse global headers.
-  let headers = s:ParseHeaders(hostLine + 1, lastLine - 1)
+  let headers = s:ParseHeaders(hostLine + 1, lastLine - 1, v:false)
 
   """ Parse curl options.
   let curlOpts = s:ParseCurlOpts(hostLine + 1, lastLine - 1)
@@ -365,7 +372,8 @@ function! s:ParseRequest(start, resumeFrom, end, globSection)
   endif
 
   """ Parse headers if any and merge with global headers.
-  let localHeaders = s:ParseHeaders(lineNumHost + 1, lineNumVerb - 1)
+  let hasBody = !empty(getline(lineNumVerb + 1, lineNumNextVerb - 1))
+  let localHeaders = s:ParseHeaders(lineNumHost + 1, lineNumVerb - 1, hasBody)
   let headers = get(a:globSection, 'headers', {})
   call extend(headers, localHeaders)
 
