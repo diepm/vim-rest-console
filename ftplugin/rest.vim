@@ -742,7 +742,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
   execute '1delete _'
   " WTF:
   call timer_start(10, { tid -> execute('normal "_ddu')})
-  call timer_start(20, { tid -> execute('normal GzxggzMzr')})
+  call timer_start(20, { tid -> execute('normal GzxggzMzrzr')})
   " call timer_start(50, { tid -> execute('setlocal nomodifiable')})
   call timer_start(100, { tid -> execute(origWin . 'wincmd w')})
 endfunction
