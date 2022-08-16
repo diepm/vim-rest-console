@@ -731,20 +731,31 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
 
   """ Display commands in result buffer if any.
   if s:GetOpt('vrc_show_command_in_result_buffer', 0)
-    if (!empty(a:outputInfo['commands']))
-      let prefixedList = map(copy(a:outputInfo['commands']), '"REQUEST: " . v:val . "\t"') 
+    if (!empty(a:outputInfo['commands']) && includeResponseHeader)
+      let prefixedList = map(copy(a:outputInfo['commands']), '"REQUEST: " . v:val')
       call append(0, prefixedList)
-      call append(1, '')
+    else
+      execute '1delete _'
     endif
+  else
+    execute '1delete _'
   endif
 
   """ Finalize view.
-  execute '1delete _'
+  if includeResponseHeader
+    call append(0, '/*')
+    call append(search('\v^\s*$', 'n')-1, '*/')
+  endif
+
   " WTF:
   call timer_start(10, { tid -> execute('normal "_ddu')})
-  call timer_start(20, { tid -> execute('normal GzxggzMzrzr')})
-  " call timer_start(50, { tid -> execute('setlocal nomodifiable')})
-  call timer_start(100, { tid -> execute(origWin . 'wincmd w')})
+  if includeResponseHeader
+    call timer_start(30, { tid -> execute('normal GzxggzMzrzrza')})
+  else
+    call timer_start(30, { tid -> execute('normal GzxggzMzr')})
+  endif
+  call timer_start(150, { tid -> execute('setlocal nomodifiable')})
+  call timer_start(250, { tid -> execute(origWin . 'wincmd w')})
 endfunction
 
 """
