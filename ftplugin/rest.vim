@@ -632,9 +632,14 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
     "" Open in Split Window
     let outputWin = bufwinnr(bufnr(a:tmpBufName))
     if outputWin == -1
-      let cmdSplit = 'vsplit'
       if s:GetOpt('vrc_horizontal_split', 0)
         let cmdSplit = 'split'
+      else
+        if &columns <= 120
+          let cmdSplit = 'split'
+        else
+          let cmdSplit = 'vsplit'
+        endif
       endif
 
       if s:GetOpt('vrc_keepalt', 0)
