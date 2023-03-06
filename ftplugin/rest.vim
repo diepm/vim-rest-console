@@ -502,7 +502,7 @@ function! s:GetCurlCommand(request)
   endif
   let vrcCurlTimeout = s:GetOpt('vrc_curl_timeout', '1m')
   return [
-    \ 'timeout ' . vrcCurlTimeout . ' curl ' . join(curlArgs) . ' ' . s:Shellescape(a:request.host . a:request.requestPath),
+    \ 'timeout ' . vrcCurlTimeout . ' curl --silent ' . join(curlArgs) . ' ' . s:Shellescape(a:request.host . a:request.requestPath),
     \ curlOpts
   \]
 endfunction
