@@ -32,6 +32,7 @@ CONTENTS                                                         *VrcContents*
       vrc_curl_opts.......................................... |vrc_curl_opts|
       vrc_debug.................................................. |vrc_debug|
       vrc_elasticsearch_support.................. |vrc_elasticsearch_support|
+      vrc_flex_columns.................................... |vrc_flex_columns|
       vrc_header_content_type...................... |vrc_header_content_type|
       vrc_horizontal_split............................ |vrc_horizontal_split|
       vrc_keepalt.............................................. |vrc_keepalt|
@@ -502,6 +503,13 @@ default.
 If enabled, the data of Elasticsearch's `_bulk` API can also be specified
 directly in the request block instead of indirectly via an external file.
 It's off by default.
+
+------------------------------------------------------------------------------
+*vrc_flex_columns*
+
+A number, that decides if the ouptut buffer is a vertical or horizontal
+split, if you define |vrc_horizontal_split|, this option doesn't work.
+It's 155 by default.
 
 ------------------------------------------------------------------------------
 *vrc_header_content_type*

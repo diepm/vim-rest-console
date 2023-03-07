@@ -635,7 +635,7 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
       if s:GetOpt('vrc_horizontal_split', 0)
         let cmdSplit = 'split'
       else
-        if &columns <= 120
+        if &columns < s:GetOpt('vrc_flex_columns', '155')
           let cmdSplit = 'split'
         else
           let cmdSplit = 'vsplit'
