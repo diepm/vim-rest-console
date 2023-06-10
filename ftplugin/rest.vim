@@ -206,10 +206,10 @@ function! s:ParseHeaders(start, end)
     if line ==? '' || line =~? s:vrc_comment_delim || line =~? '\v^--?\w+'
       continue
     endif
-    let sepIdx = stridx(line, ':')
+    let sepIdx = stridx(line, ': ')
     if sepIdx > -1
       let key = s:StrTrim(line[0:sepIdx - 1])
-      let headers[key] = s:StrTrim(line[sepIdx + 1:])
+      let headers[key] = s:StrTrim(line[sepIdx + 2:])
     endif
   endfor
   return headers
@@ -743,10 +743,18 @@ function! s:RunQuery(start, end)
     silent !clear
     redraw!
 
-    call add(outputInfo['outputChunks'], system(curlCmd))
+    let output = system(curlCmd)
+
+    call add(outputInfo['outputChunks'], output)
     if shouldShowCommand
       call add(outputInfo['commands'], curlCmd)
     endif
+
+    if s:HandleResponse(a:start, resumeFrom, a:end, output, outputInfo) != 0
+        break
+    endif
+    let globSection = s:ParseGlobSection()
+
     let resumeFrom = request.resumeFrom
   endwhile
 
@@ -757,6 +765,46 @@ function! s:RunQuery(start, end)
       \ 'hasResponseHeader': vrc#opt#DictHasKeys(curlOpts, ['-i', '--include'])
     \ }
   \)
+endfunction
+
+"""
+" Handle output of request
+"
+" @param int a:start
+" @param int a:end
+" @param int a:input - request output
+" @param int a:outputInfo - produced output
+" @return int - return code of handler execution
+"
+function! s:HandleResponse(start, resumeFrom, end, input, outputInfo)
+    let currVerb = s:ParseVerbQuery(a:resumeFrom, a:end)[0]
+    let nextVerb = s:ParseVerbQuery(currVerb + 1, a:end)[0]
+    if nextVerb == 0 | let nextVerb = a:end | endif
+
+    for i in range(currVerb, nextVerb)
+        let line = getline(i)
+        if match(line, '^\(#>\).*<<.\+') != 0 | continue | endif
+        let cmd = map(split(line, '#>\|<<', 1)[1:2], {k,v -> trim(v, ' ', 1)})
+        let output = system(cmd[1], a:input)
+        let code = v:shell_error
+        if len(cmd[0]) && trim(cmd[0]) != '?'
+            call setline(1, map(getline(1, s:LineNumGlobSectionDelim()), {k,v -> substitute(v, '^'..cmd[0]..'.*', cmd[0]..trim(output), '')}))
+            call setline(a:start, map(getline(a:start, a:end), {k,v -> substitute(v, '^'..cmd[0]..'.*', cmd[0]..trim(output), '')}))
+        else
+            if trim(cmd[0]) == '?'
+                if code != 0
+                    echohl WarningMsg | echo "Execution failed at line "..i.." (code: "..code..")" | echohl None
+                    call cursor(i, 1)
+                    return code
+                endif
+            else
+                if s:GetOpt('vrc_show_command', 0)
+                    call add(a:outputInfo['commands'], output)
+                endif
+            endif
+        endif
+    endfor
+    return 0
 endfunction
 
 """
@@ -807,6 +855,28 @@ function! VrcQuery()
     endfor
     let s:deprecatedMessages = []
   endif
+endfunction
+
+"""
+" Handle content of output buffer
+"
+function! VrcHandleResponse()
+    if match(getline("."), '^#%.*<<.\+') != 0 | return | endif
+    let cmd = map(split(getline("."), '#%\|<<', 1)[1:2], {k,v -> trim(v, ' ', 1)})
+    let input = getbufline(bufnr(s:GetOpt('vrc_output_buffer_name', '__REST_response__')), 1, "$")
+    if len(input)
+        let output = system(cmd[1], input)
+        let code = v:shell_error
+        if len(cmd[0]) && trim(cmd[0]) != '?'
+            call setline(1, map(getline(1, '$'), {k,v -> substitute(v, '^'..cmd[0]..'.*', cmd[0]..trim(output), '')}))
+        else
+            if trim(cmd[0]) == '?' | let output = (code == 0) ? "True" : "False" | endif
+            call setqflist([], line('.') == a:firstline ? 'r' : 'a',
+            \    {'items': map(split(output, '\n'), {k,v -> {'text':v, 'lnum':line('.')}})})
+            let currWin = winnr()
+            copen | execute currWin . 'wincmd w'
+        endif
+    endif
 endfunction
 
 """
