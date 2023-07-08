@@ -24,6 +24,7 @@ CONTENTS                                                         *VrcContents*
       5.3 Global Variable Declaration..................... |VrcGlobalVarDecl|
       5.4 Line-by-line Request Body.................... |VrcSplitRequestBody|
       5.5 Consecutive Request Verbs......................... |VrcConReqVerbs|
+      5.6 Response handlers............................ |VrcResponseHandlers|
   6. Configuration........................................ |VrcConfiguration|
       vrc_allow_get_request_body................ |vrc_allow_get_request_body|
       vrc_auto_format_response_enabled.... |vrc_auto_format_response_enabled|
@@ -384,6 +385,151 @@ verb is appended to the output view.
     GET /test
     DELETE /test
 <
+------------------------------------------------------------------------------
+                                                         *VrcResponseHandlers*
+5.6 Response Handlers
+
+Response handlers are used to parse response and do one of following actions:
+ *  substitute headers or global variables with values from response
+ *  send parse result to quickfix list
+ *  provide assertions which can abort execution of following requests in same
+    block
+
+Response handler is effectively a comment of following format:
+>
+    #{prefix}{target}<<{pattern}
+<
+where {prefix} defines the scope of handler (see below), {target} defines what
+to do with result, and {pattern} defines how to parse response to get the
+result.
+
+There are three types of handler depending on {target}:
+                                                      *VrcSubstitutionHandler*
+    1. when {target} is non-empty string it is considered a substitution
+handler.  It replaces remaining part of the line with {pattern} output. e.g.
+when {target} is "Authorization: " then lines which defines Authorization
+header will be replaced with respective value extracted from response.
+                                                             *VrcTraceHandler*
+    2. when {target} is empty string it is considered trace handler. It outputs
+all pattern results to quickfix list.
+                                                         *VrcAssertionHandler*
+    3. when {target} is `?` string it is considered assertion handler. In this
+case output of {pattern} is ignored but response code is considered. When
+response code is false (i.e. non-`0`) then it terminates execution of current
+block. See examples below.
+
+{pattern} is any shell command which consumes response and produces some output
+used by {target}.
+
+Handler can have one of following `scopes` depending on {prefix} value:
+
+    `>` - local scope. This handler consumes output of current request and
+makes substitutions (when it is substitution handler) only in current block and
+in global section. These handlers executed automatically right after request
+where they are defined. For this handler if {target} is `?` and {pattern} exit
+code is non-`0` then it terminates current block execution.
+    `%` - global scope. This handler consumes whole content of VRC output
+buffer and makes substitutions globally. It is ignored during usual request
+launch. These handlers can be invoked with `:call VrcHandleResponse()` for
+current line or selected region.
+
+                                                 *VrcResponseHandlersExamples*
+Examples~
+
+Local-scoped subtitution handler used to set request header value:
+>
+    http://somehost
+    Authorization: Bearer <TBD>
+    --
+    --
+    POST /token
+    #>Authorization: Bearer << jq -r '.access_token'
+
+    GET /protected_resource
+<
+here we have `Authorization` header defined in global scope. First request
+returns some json with `access_token` field which can be used as bearer token
+for call which requires auth. This handler executed right after first request,
+extracts access token and put it in defined header. Second request will be
+executed with respective Authorization header.
+
+Local-scoped subtitution handler used to set global variable value:
+>
+    http://somehost
+    userId=
+    --
+    --
+    GET /user
+    #>userId=<< jq -r '.id'
+
+    PUT /user/:userId
+    {
+    .....
+    }
+<
+in this example, first we GET "user" resource. Handler extracts it's `id` from
+response and place it in `userId` global variable. In second request we use
+this `userId` to update resource.
+
+Local-scoped assertion handler:
+>
+    --
+    -i
+    GET /user
+
+    #>?<< grep "HTTP/" | grep "404"
+
+    POST /user/
+    {
+    ....
+    }
+<
+in this example second request will be executed ONLY when first responds with
+`404`.
+
+Global-scoped handler, used to extract response codes of all requests:
+>
+    --
+    -i
+    GET /user/1
+    GET /user/2
+    GET /user/3
+
+    #%<< grep "HTTP/"
+<
+this handler won't be executed automatically. Put cursor on it (or visually
+select line) and `:call VrcHandleResponse()` . It will show in quickfix list
+something like:
+>
+    |144| HTTP/2 200
+    |144| HTTP/2 200
+    |144| HTTP/2 404
+<
+i.e. first and second resource exist. Last one - not.  This types of handlers
+can be used to generate some kind of report after execution of series of
+requests.
+
+Note: this handler uses as input whole content of VRC output buffer.
+
+You can automate it even more. For example you need to quickly ensure that all
+requests from your batch finished with success (e.g. 200), then you can do:
+>
+    --
+    -i
+    GET /user/1
+    GET /user/2
+    GET /user/3
+
+    #%?<< [[ -z $(grep "HTTP/" | grep -v "200") ]]
+<
+it will produce in quickfix list:
+>
+    |145| True
+<
+if all requests respond with `200`, or `False` otherwise.  You can visually
+select several handlers and `:call VrcHandleResponse()` for region. They will
+be executed line by line. Output will be appended to quickfix list.
+
 ==============================================================================
                                                             *VrcConfiguration*
 6. CONFIGURATION~
