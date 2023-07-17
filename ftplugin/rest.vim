@@ -753,14 +753,13 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
   endif
 
   " WTF:
-  call timer_start(10, { tid -> execute('normal "_ddu')})
   if includeResponseHeader
-    call timer_start(30, { tid -> execute('normal GzxggzMzrzrza')})
+    call timer_start(10, { tid -> execute('setlocal foldlevel=2 | normal zxggza)jzv')})
   else
-    call timer_start(30, { tid -> execute('normal GzxggzMzr')})
+    call timer_start(10, { tid -> execute('setlocal foldlevel=1 | normal zxzr')})
   endif
-  call timer_start(150, { tid -> execute('setlocal nomodifiable')})
-  call timer_start(250, { tid -> execute(origWin . 'wincmd w')})
+  call timer_start(30, { tid -> execute('setlocal nomodifiable')})
+  call timer_start(40, { tid -> execute(origWin . 'wincmd w')})
 endfunction
 
 """
