@@ -190,11 +190,18 @@ endfunction
 "
 " @param  int  a:start
 " @param  int  a:end
+" @param  bool a:hasBody
 " @return dict {'header1': 'value1', 'header2': 'value2'}
 "
-function! s:ParseHeaders(start, end)
+function! s:ParseHeaders(start, end, hasBody)
   let contentTypeOpt = s:GetOpt('vrc_header_content_type', 'application/json')
-  let headers = {'Content-Type': contentTypeOpt}
+
+  let headers = {}
+
+  if a:hasBody
+    let headers = {'Content-Type': contentTypeOpt}
+  endif
+
   if (a:end < a:start)
     return headers
   endif
@@ -272,7 +279,7 @@ function! s:ParseGlobSection()
   let [hostLine, host] = s:ParseHost(1, lastLine - 1)
 
   """ Parse global headers.
-  let headers = s:ParseHeaders(hostLine + 1, lastLine - 1)
+  let headers = s:ParseHeaders(hostLine + 1, lastLine - 1, v:false)
 
   """ Parse curl options.
   let curlOpts = s:ParseCurlOpts(hostLine + 1, lastLine - 1)
@@ -365,7 +372,8 @@ function! s:ParseRequest(start, resumeFrom, end, globSection)
   endif
 
   """ Parse headers if any and merge with global headers.
-  let localHeaders = s:ParseHeaders(lineNumHost + 1, lineNumVerb - 1)
+  let hasBody = !empty(getline(lineNumVerb + 1, lineNumNextVerb - 1))
+  let localHeaders = s:ParseHeaders(lineNumHost + 1, lineNumVerb - 1, hasBody)
   let headers = get(a:globSection, 'headers', {})
   call extend(headers, localHeaders)
 
@@ -492,8 +500,9 @@ function! s:GetCurlCommand(request)
   if !empty(a:request.dataBody)
     call add(curlArgs, s:GetCurlDataArgs(a:request))
   endif
+  let vrcCurlTimeout = s:GetOpt('vrc_curl_timeout', '1m')
   return [
-    \ 'curl ' . join(curlArgs) . ' ' . s:Shellescape(a:request.host . a:request.requestPath),
+    \ 'timeout ' . vrcCurlTimeout . ' curl --silent ' . join(curlArgs) . ' ' . s:Shellescape(a:request.host . a:request.requestPath),
     \ curlOpts
   \]
 endfunction
@@ -614,36 +623,53 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
 
   """ Setup view.
   let origWin = winnr()
-  let outputWin = bufwinnr(bufnr(a:tmpBufName))
-  if outputWin == -1
-    let cmdSplit = 'vsplit'
-    if s:GetOpt('vrc_horizontal_split', 0)
-      let cmdSplit = 'split'
-    endif
-
-    if s:GetOpt('vrc_keepalt', 0)
-      let cmdSplit = 'keepalt ' . cmdSplit
-    endif
-
-    """ Create view if not loadded or hidden.
-    execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
+  "" Open in new buffer
+  if s:GetOpt('vrc_new_buffer', 0)
+    execute 'badd ' . a:tmpBufName
+    execute 'b ' . a:tmpBufName
     setlocal buftype=nofile
   else
-    """ View already shown, switch to it.
-    execute outputWin . 'wincmd w'
+    "" Open in Split Window
+    let outputWin = bufwinnr(bufnr(a:tmpBufName))
+    if outputWin == -1
+      if s:GetOpt('vrc_horizontal_split', 0)
+        let cmdSplit = 'split'
+      else
+        if &columns < s:GetOpt('vrc_flex_columns', '155')
+          let cmdSplit = 'split'
+        else
+          let cmdSplit = 'vsplit'
+        endif
+      endif
+
+      if s:GetOpt('vrc_keepalt', 0)
+        let cmdSplit = 'keepalt ' . cmdSplit
+      endif
+
+      """ Create view if not loadded or hidden.
+      execute 'rightbelow ' . cmdSplit . ' ' . a:tmpBufName
+      setlocal buftype=nofile
+    else
+      """ View already shown, switch to it.
+      execute outputWin . 'wincmd w'
+    endif
   endif
 
   """ Display output in view.
   setlocal modifiable
-  silent! normal! ggdG
+  silent! normal! gg"_dG
   let output = join(a:outputInfo['outputChunks'], "\n\n")
   call setline('.', split(substitute(output, '[[:return:]]', '', 'g'), '\v\n'))
 
   """ Display commands in quickfix window if any.
-  if (!empty(a:outputInfo['commands']))
-    execute 'cgetexpr' string(a:outputInfo['commands'])
-    copen
-    execute outputWin 'wincmd w'
+  if s:GetOpt('vrc_show_command_in_quickfix', 1)
+    if (!empty(a:outputInfo['commands']))
+      execute 'cgetexpr' string(a:outputInfo['commands'])
+      if s:GetOpt('vrc_open_quickfix', 0)
+        copen
+        execute outputWin 'wincmd w'
+      endif
+    endif
   endif
 
   """ Detect content-type based on the returned header.
@@ -686,6 +712,8 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
               \ 'g'
             \)
           endif
+          " Character u2001
+          " call append('$', " ")
           call append('$', split(formattedBody, '\v\n'))
         elseif s:GetOpt('vrc_debug', 0)
           echom "VRC: auto-format error: " . v:shell_error
@@ -699,15 +727,39 @@ function! s:DisplayOutput(tmpBufName, outputInfo, config)
       syntax clear
       try
         execute "syntax include @vrc_" . fileType . " syntax/" . fileType . ".vim"
-        execute "syntax region body start=/^$/ end=/\%$/ contains=@vrc_" . fileType
+        " Character u2001
+        " execute "syntax region body start=/ / end=/\%$/ contains=@vrc_" . fileType
       catch
       endtry
     endif
   endif
 
+  """ Display commands in result buffer if any.
+  if s:GetOpt('vrc_show_command_in_result_buffer', 0)
+    if (!empty(a:outputInfo['commands']) && includeResponseHeader)
+      let prefixedList = map(copy(a:outputInfo['commands']), '"REQUEST: " . v:val')
+      call append(0, prefixedList)
+    else
+      execute '1delete _'
+    endif
+  else
+    execute '1delete _'
+  endif
+
   """ Finalize view.
-  setlocal nomodifiable
-  execute origWin . 'wincmd w'
+  if includeResponseHeader
+    call append(0, '/*')
+    call append(search('\v^\s*$', 'n')-1, '*/')
+  endif
+
+  " WTF:
+  if includeResponseHeader
+    call timer_start(10, { tid -> execute('setlocal foldlevel=2 | normal zxggza)jzv')})
+  else
+    call timer_start(10, { tid -> execute('setlocal foldlevel=1 | normal zxzr')})
+  endif
+  call timer_start(30, { tid -> execute('setlocal nomodifiable')})
+  call timer_start(40, { tid -> execute(origWin . 'wincmd w')})
 endfunction
 
 """
@@ -814,9 +866,9 @@ endfunction
 "
 function! VrcMap()
   let triggerKey = s:GetOpt('vrc_trigger', '<C-j>')
-  execute 'vnoremap <buffer> ' . triggerKey . ' :call VrcQuery()<CR>'
+  " execute 'vnoremap <buffer> ' . triggerKey . ' :call VrcQuery()<CR>'
   execute 'nnoremap <buffer> ' . triggerKey . ' :call VrcQuery()<CR>'
-  execute 'inoremap <buffer> ' . triggerKey . ' <Esc>:call VrcQuery()<CR>'
+  " execute 'inoremap <buffer> ' . triggerKey . ' <Esc>:call VrcQuery()<CR>'
 endfunction
 
 if s:GetOpt('vrc_set_default_mapping', 1)

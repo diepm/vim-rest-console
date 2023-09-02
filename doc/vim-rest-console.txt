@@ -27,20 +27,23 @@ CONTENTS                                                         *VrcContents*
   6. Configuration........................................ |VrcConfiguration|
       vrc_allow_get_request_body................ |vrc_allow_get_request_body|
       vrc_auto_format_response_enabled.... |vrc_auto_format_response_enabled|
-      vrc_auto_format_response_patterns...|vrc_auto_format_response_patterns|
-      vrc_auto_format_uhex.............................|vrc_auto_format_uhex|
+      vrc_auto_format_response_patterns.. |vrc_auto_format_response_patterns|
+      vrc_auto_format_uhex............................ |vrc_auto_format_uhex|
       vrc_curl_opts.......................................... |vrc_curl_opts|
       vrc_debug.................................................. |vrc_debug|
       vrc_elasticsearch_support.................. |vrc_elasticsearch_support|
+      vrc_flex_columns.................................... |vrc_flex_columns|
       vrc_header_content_type...................... |vrc_header_content_type|
-      vrc_horizontal_split.....   .................... |vrc_horizontal_split|
+      vrc_horizontal_split............................ |vrc_horizontal_split|
       vrc_keepalt.............................................. |vrc_keepalt|
       vrc_output_buffer_name........................ |vrc_output_buffer_name|
       vrc_response_default_content_type.. |vrc_response_default_content_type|
       vrc_set_default_mapping...................... |vrc_set_default_mapping|
-      vrc_show_command.....................................|vrc_show_command|
+      vrc_show_command.................................... |vrc_show_command|
+      vrc_show_command_in_quickfix............ |vrc_show_command_in_quickfix|
+      vrc_show_command_in_result_buffer.. |vrc_show_command_in_result_buffer|
       vrc_split_request_body........................ |vrc_split_request_body|
-      vrc_syntax_highlight_response...........|vrc_syntax_highlight_response|
+      vrc_syntax_highlight_response.......... |vrc_syntax_highlight_response|
       vrc_trigger.............................................. |vrc_trigger|
   7. Tips 'n Tricks................................................. |VrcTnt|
       7.1 POST Data in Bulk................................. |VrcTntDataBulk|
@@ -502,6 +505,13 @@ directly in the request block instead of indirectly via an external file.
 It's off by default.
 
 ------------------------------------------------------------------------------
+*vrc_flex_columns*
+
+A number, that decides if the ouptut buffer is a vertical or horizontal
+split, if you define |vrc_horizontal_split|, this option doesn't work.
+It's 155 by default.
+
+------------------------------------------------------------------------------
 *vrc_header_content_type*
 
 This option is to set the header content type of the request. It defaults to
@@ -575,6 +585,29 @@ pane. It's disabled by default. To enable:
 >
     let g:vrc_show_command = 1
 <
+------------------------------------------------------------------------------
+*vrc_show_command_in_quickfix*
+
+This option disables the printing of the executed curl command in the quickfix 
+list. It's enabled by default. To disable:
+>
+    let g:vrc_show_command_in_quickfix = 0
+
+------------------------------------------------------------------------------
+*vrc_curl_timeout*
+
+Kill curl after this timeout - default 1m.
+See man timeout for details.
+>
+    let g:vrc_curl_timeout = '5s'
+
+------------------------------------------------------------------------------
+*vrc_show_command_in_result_buffer*
+
+This option enables the printing of the executed curl command in the output
+pane. It's disabled by default. To enable:
+>
+    let g:vrc_show_command_in_result_buffer = 1
 ------------------------------------------------------------------------------
 *vrc_split_request_body*
 
