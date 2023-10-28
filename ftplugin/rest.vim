@@ -209,7 +209,7 @@ function! s:ParseHeaders(start, end)
     let sepIdx = stridx(line, ':')
     if sepIdx > -1
       let key = s:StrTrim(line[0:sepIdx - 1])
-      let headers[key] = s:StrTrim(line[sepIdx + 1:])
+      let headers[key == 'content-type' ? 'Content-Type' : key] = s:StrTrim(line[sepIdx + 1:])
     endif
   endfor
   return headers
