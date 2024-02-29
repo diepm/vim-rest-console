@@ -493,7 +493,7 @@ function! s:GetCurlCommand(request)
     call add(curlArgs, s:GetCurlDataArgs(a:request))
   endif
   return [
-    \ 'curl ' . join(curlArgs) . ' ' . s:Shellescape(a:request.host . a:request.requestPath),
+    \ 'curl --silent ' . join(curlArgs) . ' ' . s:Shellescape(a:request.host . a:request.requestPath),
     \ curlOpts
   \]
 endfunction
